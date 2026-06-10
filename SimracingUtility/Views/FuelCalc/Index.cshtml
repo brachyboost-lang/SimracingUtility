@@ -1,0 +1,58 @@
+﻿@*
+
+*@
+
+@{
+
+}
+
+<div>
+
+    @{
+        var fuelCalcModel = (SimracingUtility.Models.FuelCalcViewModel)Model;
+    }
+    <h1>Fuel Calculator</h1>
+    <form method="post" asp-action="Index">
+        <div class="mb-3">
+            <label for="EventDurationMinutes" class="form-label">Number of Laps</label>
+            <input type="number" class="form-control" id="EventDurationMinutes" name="EventDurationMinutes" value="@fuelCalcModel.EventDurationMinutes" required />
+        </div>
+        <div class="mb-3">
+            <label for="FuelPerLap" class="form-label">Fuel Per Lap</label>
+            <input type="number" class="form-control" id="fuelPerLap" name="FuelPerLap" value="@fuelCalcModel.FuelPerLap" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Calculate</button>
+    </form>
+    <div>
+        <label for="TotalFuelNeeded" class="form-label">Total Fuel Needed</label>
+        <label for="TotalLaps" class="form-label">Total Laps</label>
+    </div>
+    <div>
+        <h2>Recent Fuel Calculations</h2>
+    </div>
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Number of Laps</th>
+                    <th>Fuel Per Lap</th>
+                    <th>Total Fuel Needed</th>
+                    <th>Calculated At</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var calc in ViewBag.RecentCalculations)
+                {
+                    <tr>
+                        <td>@calc.TrackName</td>
+                        <td>@calc.EventDurationMinutes</td>
+                        <td>@calc.FuelPerLap</td>
+                        <td>@calc.NumberOfPitStops</td>
+                        <td>@calc.Laps</td>
+                        <td>@calc.TotalFuelNeeded</td>
+                        
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
