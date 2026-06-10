@@ -1,68 +1,82 @@
-﻿@*
+﻿@model SimracingUtility.Models.FuelCalcViewModel
 
-*@
-
-@{
-
-}
-
-<div>
-    @{
-        var fuelCalcModel = (SimracingUtility.Models.FuelCalcViewModel)Model;
-    }
-    <h1>Fuel Calculator</h1>
-    <form method="post" asp-action="Index">
-        <div class="mb-3">
-            <label for="EventDurationMinutes" class="form-label">Number of Laps</label>
-            <input type="number" class="form-control" id="EventDurationMinutes" name="EventDurationMinutes" value="@fuelCalcModel.EventDurationMinutes" required />
-        </div>
-        <div class="mb-3">
-            <label for="FuelPerLap" class="form-label">Fuel Per Lap</label>
-            <input type="number" class="form-control" id="fuelPerLap" name="FuelPerLap" value="@fuelCalcModel.FuelPerLap" required />
-        </div>
-        <button type="submit" class="btn btn-primary">Calculate</button>
-    </form>
-    <div>
-        <label for="TotalFuelNeeded" class="form-label">Total Fuel Needed</label>
-        <label for="TotalLaps" class="form-label">Total Laps</label>
+<div class="d-flex flex-column">
+    <div class="mb-3">
+        <label asp-for="TrackName" class="form-label">Track Name</label>
+        <input asp-for="TrackName" class="form-control" />
     </div>
-    <div>
-        <button type="submit" class="btn btn-primary">Save This Result</button>
+
+    <div class="mb-3">
+        <label asp-for="EventDurationMinutes" class="form-label">Event Duration (Minutes)</label>
+        <input asp-for="EventDurationMinutes" type="number" class="form-control" required />
     </div>
-    <div>
-        <h2>Recent Fuel Calculations</h2>
+
+    <div class="mb-3">
+        <label asp-for="FuelPerLap" class="form-label">Fuel Per Lap</label>
+        <input asp-for="FuelPerLap" type="number" step="any" class="form-control" required />
     </div>
-    <div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Track Name</th>
-                    <th>Event Duration (Minutes)</th>
-                    <th>Car Name</th>
-                    <th>Car Class</th>
-                    <th>Fuel Per Lap</th>
-                    <th>Number of Pitstops</th>
-                    <th>Number of Laps</th>
-                    <th>Total Fuel Needed</th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var calc in ViewBag.RecentCalculations)
-                {
-                    <tr>
-                        <td>@calc.TrackName</td>
-                        <td>@calc.EventDurationMinutes</td>
-                        <td>@calc.CarName</td>
-                        <td>@calc.CarClass</td>
-                        <td>@calc.FuelPerLap</td>
-                        <td>@calc.NumberOfPitStops</td>
-                        <td>@calc.Laps</td>
-                        <td>@calc.TotalFuelNeeded</td>
-                        
-                    </tr>
-                }
-            </tbody>
-        </table>
+
+    <div class="mb-3">
+        <label asp-for="CarName" class="form-label">Car Name</label>
+        <select asp-for="CarName" class="form-select" asp-items="ViewBag.CarNames">
+            <option value="">-- select car --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CarClass" class="form-label">Car Class</label>
+        <select asp-for="CarClass" class="form-select" asp-items="ViewBag.CarClasses">
+            <option value="">-- select class --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="NumberOfPitStops" class="form-label">Number Of Pit Stops</label>
+        <input asp-for="NumberOfPitStops" type="number" min="0" class="form-control" />
+    </div>
+
+
+    <div class="mb-3">
+        <label class="form-label">Total Laps</label>
+        <input value="@Model.Laps" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Total Fuel Needed</label>
+        <input value="@Model.TotalFuelNeeded" class="form-control" readonly />
     </div>
 </div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Track Name</th>
+            <th>Event Duration (Minutes)</th>
+            <th>Car Name</th>
+            <th>Car Class</th>
+            <th>Fuel Per Lap</th>
+            <th>Number of Pitstops</th>
+            <th>Number of Laps</th>
+            <th>Total Fuel Needed</th>
+                    
+        </tr>
+    </thead>
+    <tbody>
+        @if (ViewBag.RecentFuelCalcs != null && ViewBag.RecentFuelCalcs.Count > 0)
+        {
+            @foreach (var calc in ViewBag.RecentFuelCalcs)
+            {
+                <tr>
+                    <td>@calc.TrackName</td>
+                    <td>@calc.EventDurationMinutes</td>
+                    <td>@calc.CarName</td>
+                    <td>@calc.CarClass</td>
+                    <td>@calc.FuelPerLap</td>
+                    <td>@calc.NumberOfPitStops</td>
+                    <td>@calc.Laps</td>
+                    <td>@calc.TotalFuelNeeded</td>
+
+                </tr>
+            }
+        }
+    </tbody>
+</table>

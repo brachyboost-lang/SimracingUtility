@@ -1,0 +1,16 @@
+{
+  "carClasses": [
+    "GT3",
+    "GTE",
+    "LMP2",
+    "Cup",
+    "Prototype"
+  ],
+  "cars": [
+    { "name": "Porsche 911 GT3 R", "class": "GT3" },
+    { "name": "Ferrari 488 GTE", "class": "GTE" },
+    { "name": "Oreca 07-Gibson", "class": "LMP2" },
+    { "name": "BMW M4 GT3", "class": "GT3" },
+    { "name": "Porsche 911 Cup", "class": "Cup" }
+  ]
+}
