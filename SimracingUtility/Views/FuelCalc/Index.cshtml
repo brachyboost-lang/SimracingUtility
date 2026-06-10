@@ -80,3 +80,45 @@
         }
     </tbody>
 </table>
+<script>
+    (function () {
+        // Read serialized car objects from server via ViewBag
+        var carsJson = @Html.Raw(ViewBag.CarsJson ?? "[]");
+        var cars = Array.isArray(carsJson) ? carsJson : [];
+
+        var classSelect = document.querySelector('select[name="CarClass"]');
+        var carSelect = document.querySelector('select[name="CarName"]');
+        if (!classSelect || !carSelect) return;
+
+        function filterCarsByClass(cls) {
+            return cars.filter(function (c) { return cls ? (c['class'] === cls) : true; }).map(function (c) { return c.name; });
+        }
+
+        function populate(select, items, placeholderText) {
+            var current = select.value;
+            select.innerHTML = '';
+            var ph = document.createElement('option');
+            ph.value = '';
+            ph.text = placeholderText;
+            select.appendChild(ph);
+            items.forEach(function (it) {
+                var opt = document.createElement('option');
+                opt.value = it;
+                opt.text = it;
+                select.appendChild(opt);
+            });
+            if (current) select.value = current;
+        }
+
+        classSelect.addEventListener('change', function () {
+            var cls = classSelect.value;
+            var names = filterCarsByClass(cls);
+            populate(carSelect, names, '-- select car --');
+        });
+
+        // initialize car list based on currently selected class (if any)
+        var initialClass = classSelect.value;
+        populate(carSelect, filterCarsByClass(initialClass), '-- select car --');
+    })();
+</script>
+

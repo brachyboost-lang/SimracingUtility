@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SimracingUtility.Data;
+using System.IO;
 
 namespace SimracingUtility
 {
@@ -35,9 +36,12 @@ namespace SimracingUtility
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
 
             app.UseAuthorization();
+
+
 
             app.MapStaticAssets();
             app.MapControllerRoute(
