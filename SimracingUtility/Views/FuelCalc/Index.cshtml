@@ -7,7 +7,6 @@
 }
 
 <div>
-
     @{
         var fuelCalcModel = (SimracingUtility.Models.FuelCalcViewModel)Model;
     }
@@ -28,16 +27,24 @@
         <label for="TotalLaps" class="form-label">Total Laps</label>
     </div>
     <div>
+        <button type="submit" class="btn btn-primary">Save This Result</button>
+    </div>
+    <div>
         <h2>Recent Fuel Calculations</h2>
     </div>
     <div>
         <table class="table">
             <thead>
                 <tr>
-                    <th>Number of Laps</th>
+                    <th>Track Name</th>
+                    <th>Event Duration (Minutes)</th>
+                    <th>Car Name</th>
+                    <th>Car Class</th>
                     <th>Fuel Per Lap</th>
+                    <th>Number of Pitstops</th>
+                    <th>Number of Laps</th>
                     <th>Total Fuel Needed</th>
-                    <th>Calculated At</th>
+                    
                 </tr>
             </thead>
             <tbody>
@@ -46,6 +53,8 @@
                     <tr>
                         <td>@calc.TrackName</td>
                         <td>@calc.EventDurationMinutes</td>
+                        <td>@calc.CarName</td>
+                        <td>@calc.CarClass</td>
                         <td>@calc.FuelPerLap</td>
                         <td>@calc.NumberOfPitStops</td>
                         <td>@calc.Laps</td>
@@ -56,3 +65,4 @@
             </tbody>
         </table>
     </div>
+</div>
