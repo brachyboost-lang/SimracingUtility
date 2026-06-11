@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using SimracingUtility.Data;
 using SimracingUtility.Models;
 using SimracingUtility.Services;
 using System.Text.Json;
@@ -12,20 +11,18 @@ namespace SimracingUtility.Controllers
 {
     public class FuelCalcController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly IRecentFuelCalcService _recentService;
 
-        public FuelCalcController(ApplicationDbContext context, IWebHostEnvironment env, IRecentFuelCalcService recentService)
+        public FuelCalcController(IWebHostEnvironment env, IRecentFuelCalcService recentService)
         {
-            _context = context;
             _env = env;
             _recentService = recentService;
         }
 
-        private void PopulateRecentCalcs()
+        private async Task PopulateRecentCalcsAsync()
         {
-            ViewBag.RecentFuelCalcs = _recentService.GetRecentAsync(20).GetAwaiter().GetResult();
+            ViewBag.RecentFuelCalcs = await _recentService.GetRecentAsync(20);
         }
 
         private void LoadCarsIntoViewBag()
@@ -97,9 +94,9 @@ namespace SimracingUtility.Controllers
             }
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            PopulateRecentCalcs();
+            await PopulateRecentCalcsAsync();
             LoadCarsIntoViewBag();
 
             var model = new FuelCalcViewModel();
@@ -108,7 +105,7 @@ namespace SimracingUtility.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Index(FuelCalcViewModel model)
+        public async Task<IActionResult> Index(FuelCalcViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -128,15 +125,14 @@ namespace SimracingUtility.Controllers
                     FuelTankCapacity = model.FuelTankCapacity,
                     TimePerLap = model.TimePerLap
                 };
-                model.CalculateFuel();
                 entity.NumberOfPitStops = model.NumberOfPitStops;
                 entity.TotalFuelNeeded = model.TotalFuelNeeded;
                 entity.Laps = model.Laps;
                 entity.TotalTimeLost = model.TotalTimeLost;
 
-                _recentService.CreateAsync(entity).GetAwaiter().GetResult();
+                await _recentService.CreateAsync(entity);
             }
-            PopulateRecentCalcs();
+            await PopulateRecentCalcsAsync();
             LoadCarsIntoViewBag();
 
             return View(model);
@@ -144,7 +140,7 @@ namespace SimracingUtility.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Calculate([FromBody] FuelCalcViewModel model)
+        public async Task<IActionResult> Calculate([FromBody] FuelCalcViewModel model)
         {
             if (model == null)
                 return BadRequest();
@@ -170,7 +166,7 @@ namespace SimracingUtility.Controllers
                 TotalTimeLost = model.TotalTimeLost
             };
 
-            _recentService.CreateAsync(entity).GetAwaiter().GetResult();
+            await _recentService.CreateAsync(entity);
 
             // return minimal data for client update
             return Json(new

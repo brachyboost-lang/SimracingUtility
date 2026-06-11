@@ -10,16 +10,14 @@ namespace SimracingUtility.Data
             : base(options)
         {
         }
-
-        public DbSet<FuelCalcViewModel> FuelCalc { get; set; }
-        public DbSet<Models.RecentFuelCalculation> RecentFuelCalculations { get; set; }
+        public DbSet<RecentFuelCalculation> RecentFuelCalculations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // Map the RecentFuelCalculation entity to the existing "FuelCalc" table so existing data remains accessible.
-            modelBuilder.Entity<Models.RecentFuelCalculation>(b =>
+            modelBuilder.Entity<RecentFuelCalculation>(b =>
             {
                 b.ToTable("FuelCalc");
                 b.HasKey(x => x.Id);
