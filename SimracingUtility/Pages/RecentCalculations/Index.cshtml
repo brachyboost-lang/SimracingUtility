@@ -29,7 +29,7 @@
         <td>@r.Laps</td>
         <td>@r.TotalFuelNeeded</td>
         <td>@r.NumberOfPitStops</td>
-        <td>@(r.CreatedAt is DateTime created ? DateTime.SpecifyKind(created, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null)</td>
+        <td>@(r.CreatedAt != null ? DateTime.SpecifyKind((DateTime)r.CreatedAt, DateTimeKind.Utc).ToLocalTime().ToString("g") : "")</td>
         <td><a asp-page="Details" asp-route-id="@r.Id">Details</a></td>
     </tr>
 }

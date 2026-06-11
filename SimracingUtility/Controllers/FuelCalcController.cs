@@ -181,7 +181,7 @@ namespace SimracingUtility.Controllers
                 carClass = entity.CarClass,
                 fuelPerLap = entity.FuelPerLap,
                 timePerLap = entity.TimePerLap,
-                createdAt = entity.CreatedAt.HasValue ? entity.CreatedAt.Value.ToLocalTime().ToString("o") : null
+                createdAt = entity.CreatedAt.HasValue ? DateTime.SpecifyKind(entity.CreatedAt.Value, System.DateTimeKind.Utc).ToLocalTime().ToString("o") : null
             });
         }
 

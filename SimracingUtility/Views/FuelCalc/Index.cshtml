@@ -111,7 +111,7 @@
                     <td>@calc.NumberOfPitStops</td>
                     <td>@calc.Laps</td>
                     <td>@calc.TotalFuelNeeded</td>
-                    <td>@calc.CreatedAt</td>
+                    <td>@(calc.CreatedAt != null ? DateTime.SpecifyKind((DateTime)calc.CreatedAt, DateTimeKind.Utc).ToLocalTime().ToString("g") : "")</td>
 
                 </tr>
             }
