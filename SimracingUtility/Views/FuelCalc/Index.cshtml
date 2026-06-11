@@ -211,15 +211,34 @@
                 setVal('Laps', data.laps);
                 setVal('TotalFuelNeeded', data.totalFuelNeeded);
 
-                // append to recent table
+                // append to recent table (match the table header order)
                 try {
                     var tbody = document.querySelector('table.table tbody');
                     if (tbody) {
                         var tr = document.createElement('tr');
-                        var cols = [data.trackName, data.eventDurationMinutes, data.carName, data.carClass, data.fuelPerLap, data.numberOfPitStops, data.laps, data.totalFuelNeeded];
+                        // columns: Track Name, Car Name, Car Class, Fuel Per Lap, Laptime, Event Duration (Minutes), Number of Pitstops, Number of Laps, Total Fuel Needed, Created At
+                        var createdAtText = '';
+                        if (data.createdAt) {
+                            var dt = new Date(data.createdAt);
+                            if (!isNaN(dt.getTime())) createdAtText = dt.toLocaleString();
+                        }
+
+                        var cols = [
+                            data.trackName,
+                            data.carName,
+                            data.carClass,
+                            data.fuelPerLap,
+                            data.timePerLap,
+                            data.eventDurationMinutes,
+                            data.numberOfPitStops,
+                            data.laps,
+                            data.totalFuelNeeded,
+                            createdAtText
+                        ];
+
                         cols.forEach(function (c) {
                             var td = document.createElement('td');
-                            td.textContent = c;
+                            td.textContent = c ?? '';
                             tr.appendChild(td);
                         });
                         tbody.insertBefore(tr, tbody.firstChild);

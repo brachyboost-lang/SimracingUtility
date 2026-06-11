@@ -179,7 +179,9 @@ namespace SimracingUtility.Controllers
                 eventDurationMinutes = entity.EventDurationMinutes,
                 carName = entity.CarName,
                 carClass = entity.CarClass,
-                fuelPerLap = entity.FuelPerLap
+                fuelPerLap = entity.FuelPerLap,
+                timePerLap = entity.TimePerLap,
+                createdAt = entity.CreatedAt.HasValue ? entity.CreatedAt.Value.ToLocalTime().ToString("o") : null
             });
         }
 
