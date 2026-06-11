@@ -1,6 +1,11 @@
 ﻿@model SimracingUtility.Models.FuelCalcViewModel
-
-<form asp-action="Index" method="post" class="FuelCalcMain">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+</head>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<form id="fuelCalcForm" asp-action="Index" method="post" class="FuelCalcMain">
     @Html.AntiForgeryToken()
 
     <div class="d-flex flex-column">
@@ -74,10 +79,11 @@
     <thead>
         <tr>
             <th>Track Name</th>
-            <th>Event Duration (Minutes)</th>
             <th>Car Name</th>
             <th>Car Class</th>
             <th>Fuel Per Lap</th>
+            <th>Laptime</th>
+            <th>Event Duration (Minutes)</th>
             <th>Number of Pitstops</th>
             <th>Number of Laps</th>
             <th>Total Fuel Needed</th>
@@ -91,10 +97,11 @@
             {
                 <tr>
                     <td>@calc.TrackName</td>
-                    <td>@calc.EventDurationMinutes</td>
                     <td>@calc.CarName</td>
                     <td>@calc.CarClass</td>
                     <td>@calc.FuelPerLap</td>
+                    <td>@calc.TimePerLap</td>
+                    <td>@calc.EventDurationMinutes</td>
                     <td>@calc.NumberOfPitStops</td>
                     <td>@calc.Laps</td>
                     <td>@calc.TotalFuelNeeded</td>
@@ -143,6 +150,83 @@
         // initialize car list based on currently selected class (if any)
         var initialClass = classSelect.value;
         populate(carSelect, filterCarsByClass(initialClass), '-- select car --');
+    })();
+</script>
+
+<script>
+    (function () {
+        var form = document.getElementById('fuelCalcForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // collect form values
+            var getVal = function (name) {
+                var el = form.querySelector('[name="' + name + '"]');
+                return el ? el.value : null;
+            };
+
+            var model = {
+                TrackName: getVal('TrackName') || '',
+                EventDurationMinutes: parseInt(getVal('EventDurationMinutes') || '0', 10),
+                FuelPerLap: parseFloat(getVal('FuelPerLap') || '0'),
+                TimePerLap: parseFloat(getVal('TimePerLap') || '0'),
+                CarName: getVal('CarName') || '',
+                CarClass: getVal('CarClass') || '',
+                PitBoxTime: parseFloat(getVal('PitBoxTime') || '0'),
+                DriveThroughTime: parseFloat(getVal('DriveThroughTime') || '0'),
+                FuelTankCapacity: parseFloat(getVal('FuelTankCapacity') || '0')
+            };
+
+            // antiforgery token
+            var tokenEl = form.querySelector('input[name="__RequestVerificationToken"]');
+            var token = tokenEl ? tokenEl.value : '';
+
+            fetch('@Url.Action("Calculate", "FuelCalc")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(model)
+            }).then(function (res) {
+                if (!res.ok) throw new Error('Request failed');
+                return res.json();
+            }).then(function (data) {
+                // update result fields
+                var setVal = function (name, value) {
+                    var el = form.querySelector('[name="' + name + '"]');
+                    if (el) el.value = value;
+                };
+
+                setVal('NumberOfPitStops', data.numberOfPitStops);
+                setVal('Laps', data.laps);
+                setVal('TotalFuelNeeded', data.totalFuelNeeded);
+
+                // append to recent table
+                try {
+                    var tbody = document.querySelector('table.table tbody');
+                    if (tbody) {
+                        var tr = document.createElement('tr');
+                        var cols = [data.trackName, data.eventDurationMinutes, data.carName, data.carClass, data.fuelPerLap, data.numberOfPitStops, data.laps, data.totalFuelNeeded];
+                        cols.forEach(function (c) {
+                            var td = document.createElement('td');
+                            td.textContent = c;
+                            tr.appendChild(td);
+                        });
+                        tbody.insertBefore(tr, tbody.firstChild);
+                    }
+                } catch (err) {
+                    // ignore DOM errors
+                }
+            }).catch(function (err) {
+                console.error(err);
+                // fallback to full-post if AJAX fails
+                form.removeEventListener('submit', arguments.callee);
+                form.submit();
+            });
+        });
     })();
 </script>
 
