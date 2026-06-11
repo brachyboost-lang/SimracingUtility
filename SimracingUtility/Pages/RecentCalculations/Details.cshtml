@@ -1,0 +1,32 @@
+@page "{id:int}"
+@model SimracingUtility.Pages.RecentCalculations.DetailsModel
+@{
+    ViewData["Title"] = "Calculation Details";
+}
+
+<h2>Calculation Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Track</dt>
+    <dd class="col-sm-9">@Model.Calculation?.TrackName</dd>
+
+    <dt class="col-sm-3">Car</dt>
+    <dd class="col-sm-9">@Model.Calculation?.CarName</dd>
+
+    <dt class="col-sm-3">Duration</dt>
+    <dd class="col-sm-9">@Model.Calculation?.EventDurationMinutes min</dd>
+
+    <dt class="col-sm-3">Laps</dt>
+    <dd class="col-sm-9">@Model.Calculation?.Laps</dd>
+
+    <dt class="col-sm-3">Fuel Needed</dt>
+    <dd class="col-sm-9">@Model.Calculation?.TotalFuelNeeded</dd>
+
+    <dt class="col-sm-3">Pit Stops</dt>
+    <dd class="col-sm-9">@Model.Calculation?.NumberOfPitStops</dd>
+
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.Calculation?.CreatedAt.ToLocalTime()</dd>
+</dl>
+
+<a asp-page="Index">Back to list</a>

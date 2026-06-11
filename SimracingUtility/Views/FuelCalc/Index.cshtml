@@ -4,71 +4,81 @@
     @Html.AntiForgeryToken()
 
     <div class="d-flex flex-column">
-    <div class="mb-3">
-        <label asp-for="TrackName" class="form-label">Track Name</label>
-        <input asp-for="TrackName" class="form-control" />
-    </div>
+        <div class="row">
 
-    <div class="mb-3">
-        <label asp-for="EventDurationMinutes" class="form-label">Event Duration (Minutes)</label>
-        <input asp-for="EventDurationMinutes" type="number" class="form-control" required />
-    </div>
+            <div class="mb-3 col-6">
+                <label asp-for="TrackName" class="form-label">Track Name</label>
+                <input asp-for="TrackName" class="form-control" />
+            </div>
 
-    <div class="mb-3">
-        <label asp-for="FuelPerLap" class="form-label">Fuel Per Lap</label>
-        <input asp-for="FuelPerLap" type="number" step="any" class="form-control" required />
-    </div>
+            <div class="mb-3 col-6">
+                <label asp-for="EventDurationMinutes" class="form-label">Event Duration (Minutes)</label>
+                <input asp-for="EventDurationMinutes" type="number" class="form-control" required />
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3 col-6">
+                <label asp-for="FuelPerLap" class="form-label">Fuel Per Lap</label>
+                <input asp-for="FuelPerLap" type="number" step="any" class="form-control" required />
+            </div>
 
-    <div class="mb-3">
-        <label asp-for="TimePerLap" class="form-label">Time Per Lap</label>
-        <input asp-for="TimePerLap" type="number" step="any" class="form-control" required />
-    </div>
+            <div class="mb-3 col-6">
+                <label asp-for="TimePerLap" class="form-label">Time Per Lap</label>
+                <input asp-for="TimePerLap" type="number" step="any" class="form-control" required />
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3 col-6">
+                <label asp-for="CarName" class="form-label">Car Name</label>
+                <select asp-for="CarName" class="form-select" asp-items="ViewBag.CarNames">
+                    <option value="">-- select car --</option>
+                </select>
+            </div>
 
-    <div class="mb-3">
-        <label asp-for="CarName" class="form-label">Car Name</label>
-        <select asp-for="CarName" class="form-select" asp-items="ViewBag.CarNames">
-            <option value="">-- select car --</option>
-        </select>
-    </div>
+            <div class="mb-3 col-6">
+                <label asp-for="CarClass" class="form-label">Car Class</label>
+                <select asp-for="CarClass" class="form-select" asp-items="ViewBag.CarClasses">
+                    <option value="">-- select class --</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3 col-6">
+                <label asp-for="PitBoxTime" class="form-label">Pit Box Time (seconds)</label>
+                <input asp-for="PitBoxTime" type="number" step="any" class="form-control" />
+            </div>
 
-    <div class="mb-3">
-        <label asp-for="CarClass" class="form-label">Car Class</label>
-        <select asp-for="CarClass" class="form-select" asp-items="ViewBag.CarClasses">
-            <option value="">-- select class --</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label asp-for="PitBoxTime" class="form-label">Pit Box Time (seconds)</label>
-        <input asp-for="PitBoxTime" type="number" step="any" class="form-control" />
-    </div>
+            <div class="mb-3 col-6">
+                <label asp-for="DriveThroughTime" class="form-label">Drive Through Time (seconds)</label>
+                <input asp-for="DriveThroughTime" type="number" step="any" class="form-control" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3 col-6">
+                <label asp-for="FuelTankCapacity" class="form-label">Fuel Tank Capacity</label>
+                <input asp-for="FuelTankCapacity" type="number" step="any" class="form-control" />
+            </div>
+            <button type="submit" class="btn btn-primary">Calculate</button>
+            <div class="container">
 
-    <div class="mb-3">
-        <label asp-for="DriveThroughTime" class="form-label">Drive Through Time (seconds)</label>
-        <input asp-for="DriveThroughTime" type="number" step="any" class="form-control" />
-    </div>
+                <div class="mb-3">
+                    <label asp-for="NumberOfPitStops" class="form-label">Number Of Pit Stops</label>
+                    <input asp-for="NumberOfPitStops" type="number" min="0" class="form-control" readonly />
+                </div>
 
-    <div class="mb-3">
-        <label asp-for="FuelTankCapacity" class="form-label">Fuel Tank Capacity</label>
-        <input asp-for="FuelTankCapacity" type="number" step="any" class="form-control" />
-    </div>
+                <div class="mb-3">
+                    <label class="form-label">Total Laps</label>
+                    <input asp-for="Laps" class="form-control" readonly />
+                </div>
 
-    <div class="mb-3">
-        <label asp-for="NumberOfPitStops" class="form-label">Number Of Pit Stops</label>
-        <input asp-for="NumberOfPitStops" type="number" min="0" class="form-control" readonly />
-    </div>
+                <div class="mb-3">
+                    <label class="form-label">Total Fuel Needed</label>
+                    <input asp-for="TotalFuelNeeded" class="form-control" readonly />
+                </div>
 
-    <div class="mb-3">
-        <label class="form-label">Total Laps</label>
-        <input asp-for="Laps" class="form-control" readonly />
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">Total Fuel Needed</label>
-        <input asp-for="TotalFuelNeeded" class="form-control" readonly />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Calculate</button>
-</div>
 </form>
 <table class="table">
     <thead>
@@ -82,7 +92,7 @@
             <th>Number of Pitstops</th>
             <th>Number of Laps</th>
             <th>Total Fuel Needed</th>
-                    
+
         </tr>
     </thead>
     <tbody>

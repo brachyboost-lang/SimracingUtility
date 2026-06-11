@@ -1,0 +1,37 @@
+@page
+@model SimracingUtility.Pages.RecentCalculations.IndexModel
+@{
+    ViewData["Title"] = "Recent Calculations";
+}
+
+<h2>Recent Calculations</h2>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Track</th>
+            <th>Car</th>
+            <th>Duration (min)</th>
+            <th>Laps</th>
+            <th>Fuel Needed</th>
+            <th>Pit Stops</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach(var r in Model.Recent)
+{
+    <tr>
+        <td>@r.TrackName</td>
+        <td>@r.CarName</td>
+        <td>@r.EventDurationMinutes</td>
+        <td>@r.Laps</td>
+        <td>@r.TotalFuelNeeded</td>
+        <td>@r.NumberOfPitStops</td>
+        <td>@r.CreatedAt.ToLocalTime()</td>
+        <td><a asp-page="Details" asp-route-id="@r.Id">Details</a></td>
+    </tr>
+}
+    </tbody>
+</table>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SimracingUtility.Data;
 using SimracingUtility.Models;
+using SimracingUtility.Services;
 using System.Text.Json;
 using System.IO;
 using System.Linq;
@@ -13,16 +14,18 @@ namespace SimracingUtility.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly IRecentFuelCalcService _recentService;
 
-        public FuelCalcController(ApplicationDbContext context, IWebHostEnvironment env)
+        public FuelCalcController(ApplicationDbContext context, IWebHostEnvironment env, IRecentFuelCalcService recentService)
         {
             _context = context;
             _env = env;
+            _recentService = recentService;
         }
 
         private void PopulateRecentCalcs()
         {
-            ViewBag.RecentFuelCalcs = _context.FuelCalc.ToList();
+            ViewBag.RecentFuelCalcs = _recentService.GetRecentAsync(20).GetAwaiter().GetResult();
         }
 
         private void LoadCarsIntoViewBag()
@@ -112,9 +115,26 @@ namespace SimracingUtility.Controllers
                 // Perform calculation server-side
                 model.CalculateFuel();
 
-                // Persist calculation
-                _context.FuelCalc.Add(model);
-                _context.SaveChanges();
+                // Persist calculation (map view model -> entity)
+                var entity = new RecentFuelCalculation
+                {
+                    EventDurationMinutes = model.EventDurationMinutes,
+                    TrackName = model.TrackName,
+                    PitBoxTime = model.PitBoxTime,
+                    FuelPerLap = model.FuelPerLap,
+                    DriveThroughTime = model.DriveThroughTime,
+                    CarName = model.CarName,
+                    CarClass = model.CarClass,
+                    FuelTankCapacity = model.FuelTankCapacity,
+                    TimePerLap = model.TimePerLap
+                };
+                model.CalculateFuel();
+                entity.NumberOfPitStops = model.NumberOfPitStops;
+                entity.TotalFuelNeeded = model.TotalFuelNeeded;
+                entity.Laps = model.Laps;
+                entity.TotalTimeLost = model.TotalTimeLost;
+
+                _recentService.CreateAsync(entity).GetAwaiter().GetResult();
             }
             PopulateRecentCalcs();
             LoadCarsIntoViewBag();
@@ -132,22 +152,38 @@ namespace SimracingUtility.Controllers
             // perform calculation
             model.CalculateFuel();
 
-            // persist
-            _context.FuelCalc.Add(model);
-            _context.SaveChanges();
+            // map to entity and persist
+            var entity = new RecentFuelCalculation
+            {
+                EventDurationMinutes = model.EventDurationMinutes,
+                TrackName = model.TrackName,
+                PitBoxTime = model.PitBoxTime,
+                FuelPerLap = model.FuelPerLap,
+                DriveThroughTime = model.DriveThroughTime,
+                CarName = model.CarName,
+                CarClass = model.CarClass,
+                FuelTankCapacity = model.FuelTankCapacity,
+                TimePerLap = model.TimePerLap,
+                NumberOfPitStops = model.NumberOfPitStops,
+                TotalFuelNeeded = model.TotalFuelNeeded,
+                Laps = model.Laps,
+                TotalTimeLost = model.TotalTimeLost
+            };
+
+            _recentService.CreateAsync(entity).GetAwaiter().GetResult();
 
             // return minimal data for client update
             return Json(new
             {
-                id = model.Id,
-                numberOfPitStops = model.NumberOfPitStops,
-                laps = model.Laps,
-                totalFuelNeeded = model.TotalFuelNeeded,
-                trackName = model.TrackName,
-                eventDurationMinutes = model.EventDurationMinutes,
-                carName = model.CarName,
-                carClass = model.CarClass,
-                fuelPerLap = model.FuelPerLap
+                id = entity.Id,
+                numberOfPitStops = entity.NumberOfPitStops,
+                laps = entity.Laps,
+                totalFuelNeeded = entity.TotalFuelNeeded,
+                trackName = entity.TrackName,
+                eventDurationMinutes = entity.EventDurationMinutes,
+                carName = entity.CarName,
+                carClass = entity.CarClass,
+                fuelPerLap = entity.FuelPerLap
             });
         }
 
