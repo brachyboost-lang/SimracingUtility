@@ -29,3 +29,97 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Page form container */
+.FuelCalcMain {
+    background: linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+    color: #e6eef8;
+    padding: 1.25rem;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+    margin-bottom: 1rem;
+}
+
+.FuelCalcMain .form-label {
+    color: #cfe6ff;
+    font-weight: 600;
+}
+
+.FuelCalcMain .form-control,
+.FuelCalcMain .form-select {
+    background: #0b1220;
+    color: #e6eef8;
+    border: 1px solid #1f334b;
+}
+
+    .FuelCalcMain .form-control:focus,
+    .FuelCalcMain .form-select:focus {
+        border-color: #2b86ff;
+        box-shadow: 0 0 0 0.15rem rgba(43,134,255,0.15);
+    }
+
+.btn-primary {
+    background: linear-gradient(90deg,#2b86ff,#1fb6ff);
+    border: none;
+    box-shadow: 0 6px 14px rgba(43,134,255,0.18);
+}
+
+/* Table styling */
+table.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    margin-bottom: 4.5rem; /* space to avoid footer overlap */
+    background: linear-gradient(180deg,#071028 0%, #041122 100%);
+    color: #ffffff; /* stronger contrast */
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.75);
+    position: relative;
+    z-index: 1;
+}
+
+    /* ensure table headers are clearly visible */
+    table.table thead th {
+        background: linear-gradient(90deg,#123152 0%,#1b425f 100%);
+        color: #fff;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    table.table tbody td {
+        padding: 0.9rem 1rem; /* larger padding for readability */
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        color: aqua; /* ensure high contrast */
+        background: grey;
+    }
+
+    table.table tbody tr:nth-child(even) {
+        background: rgba(43,86,128,0.04);
+    }
+
+    table.table tbody tr:hover {
+        background: rgba(43,134,255,0.04);
+    }
+
+.created-at {
+    color: #a9d3ff;
+    font-size: 0.95rem;
+}
+
+media (max-width: 767px) {
+    .FuelCalcMain {
+        padding: 0.75rem;
+    }
+
+    table.table thead {
+        display: none;
+    }
+
+    table.table tbody td {
+        display: block;
+        width: 100%;
+    }
+}
