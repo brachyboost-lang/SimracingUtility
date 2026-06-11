@@ -26,7 +26,7 @@
     <dd class="col-sm-9">@Model.Calculation?.NumberOfPitStops</dd>
 
     <dt class="col-sm-3">Created</dt>
-    <dd class="col-sm-9">@Model.Calculation?.CreatedAt.ToLocalTime()</dd>
+    <dd class="col-sm-9">@((Model.Calculation?.CreatedAt is DateTime created) ? DateTime.SpecifyKind(created, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null)</dd>
 </dl>
 
 <a asp-page="Index">Back to list</a>

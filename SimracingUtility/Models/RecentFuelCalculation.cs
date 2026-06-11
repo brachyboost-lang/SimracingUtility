@@ -35,7 +35,7 @@ namespace SimracingUtility.Models
         public double TimePerLap { get; set; }
         public double Laps { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
         [Timestamp]
