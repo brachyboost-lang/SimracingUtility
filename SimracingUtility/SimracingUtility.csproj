@@ -24,8 +24,4 @@
     <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="tests\Tests.csproj" />
-  </ItemGroup>
-
 </Project>
