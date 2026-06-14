@@ -59,16 +59,82 @@ Inkonsistenz zwischen `TotalFuelNeeded` (mit altem Stopp-Wert berechnet) und
 
 **Auswirkung:** Kein Crash, aber nicht-deterministisches Ergebnis im Grenzfall.
 
-## 4. Kleinere Punkte
+## 4. Kleinere Punkte (Spritrechner)
 
 - **`Laps` als Nachkommazahl:** Es werden fraktionale Runden angezeigt (z. B.
   117,92). Für eine Spritplanung ist eher die aufgerundete Rundenzahl sinnvoll —
   Modellierungsfrage, kein Crash.
-- **`SetupController`** ([SetupController.cs](SimracingUtility/Controllers/SetupController.cs))
-  ist ein leeres Gerüst mit leeren `try/catch`-Blöcken — tote Funktionalität.
 
 ---
 
-**Fazit:** Der eigentliche Rechenkern ist solide und durch Unit-Tests abgedeckt.
-Die klar behebbaren Fehler liegen drumherum — **#1** ist der einzige direkt für
-den Nutzer sichtbare Fehler, **#2** der relevanteste für die Datenqualität.
+# Setup-Hub (zweite Analyse-Runde)
+
+## 5. Übersicht lädt komplette Setup-Dateien mit (Effizienz, relevant)
+
+**Datei:** [SimracingUtility/Controllers/SetupController.cs:31](SimracingUtility/Controllers/SetupController.cs) (`Index`)
+
+```csharp
+var query = _db.Setups
+    .Include(s => s.Car)
+    .Include(s => s.Track)
+    .AsNoTracking()
+    .AsQueryable();
+...
+var setups = await query.OrderByDescending(s => s.CreatedAt).Take(200).ToListAsync();
+```
+
+Es werden vollständige `Setup`-Entities geladen — **inklusive `FileData` (bytea)**.
+Die Übersicht ([Views/Setup/Index.cshtml](SimracingUtility/Views/Setup/Index.cshtml))
+zeigt aber nur Metadaten (Name, Auto, Strecke, `FileName`, `FileSize` …) an und
+nutzt `FileData` nie.
+
+**Auswirkung:** Bei der Kartenansicht werden die kompletten Datei-Bytes von bis zu
+200 Setups unnötig aus der DB in den Speicher geladen — wächst linear mit Anzahl
+und Größe der Setups.
+
+**Fix:** Auf ein DTO/anonymes Objekt **ohne `FileData`** projizieren
+(`.Select(s => new SetupListItem { ... })`); die Datei erst im `Download`-Endpunkt
+laden (dort geschieht es bereits korrekt).
+
+## 6. Filter-Platzhalter „Alle" geht beim Sim-Wechsel verloren (klein, UX)
+
+**Datei:** [SimracingUtility/wwwroot/js/setup-hub.js](SimracingUtility/wwwroot/js/setup-hub.js) (`fillSelect`)
+
+Auf der Übersicht ([Index.cshtml](SimracingUtility/Views/Setup/Index.cshtml)) ist die
+erste Option der Auto-/Strecken-Dropdowns serverseitig `Alle`. Ändert man die
+Simulation, ersetzt das JS den kompletten Inhalt und setzt als Platzhalter
+`-- Auto wählen --` bzw. `-- Strecke wählen --`.
+
+**Auswirkung:** Rein kosmetisch — der Wert bleibt leer (`""`), die Filterung
+funktioniert weiterhin korrekt; nur die Beschriftung passt im Filter-Kontext nicht.
+
+**Fix:** Platzhaltertext über ein `data-`-Attribut konfigurierbar machen (Formular:
+„wählen", Filter: „Alle").
+
+## 7. Stiller Cap auf 200 Setups (klein)
+
+**Datei:** [SimracingUtility/Controllers/SetupController.cs:43](SimracingUtility/Controllers/SetupController.cs)
+
+`Take(200)` begrenzt die Übersicht ohne Paginierung und ohne Hinweis. Sobald mehr
+als 200 (gefilterte) Setups existieren, fehlen ältere Einträge unbemerkt.
+
+**Fix:** Paginierung ergänzen oder zumindest einen Hinweis „Es werden die neuesten
+200 Setups angezeigt" rendern.
+
+## 8. Kleinere Punkte (Setup-Hub)
+
+- **Automatische Migration beim Start:** `db.Database.Migrate()` läuft in
+  [Program.cs](SimracingUtility/Program.cs) unbedingt bei jedem Start (auch in
+  Produktion). Bequem im Dev, in Produktion aber eher kontrolliert über ein
+  Deployment ausführen.
+- **Sim-fremder Filter-Parameter:** Wird `carId`/`trackId` einer anderen
+  Simulation als `sim` übergeben (z. B. manipulierte URL), liefert `Index` eine
+  leere Liste statt den Parameter zu ignorieren — verwirrend, aber harmlos.
+
+---
+
+**Fazit:** Der Rechenkern ist solide und durch Unit-Tests abgedeckt. Beim
+Spritrechner ist **#1** der einzige direkt sichtbare Fehler, **#2** der relevanteste
+für die Datenqualität. Im Setup-Hub ist **#5** der wichtigste Punkt (vermeidbare
+Last durch Laden der Dateibytes in der Übersicht); der Rest ist kosmetisch bzw.
+betrieblich.

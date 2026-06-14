@@ -1,6 +1,127 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+@using SimracingUtility.Models
+@model List<SimracingUtility.Models.Setup>
 @{
+    ViewData["Title"] = "Setup-Hub";
+    var simList = ViewBag.SimList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+    var carList = ViewBag.CarList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+    var trackList = ViewBag.TrackList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+    var currentUserId = ViewBag.CurrentUserId as string;
+    var isLoggedIn = User.Identity != null && User.Identity.IsAuthenticated;
 }
 
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Setup-Hub</h1>
+    @if (isLoggedIn)
+    {
+        <a asp-action="Upload" class="btn btn-primary">Setup hochladen</a>
+    }
+    else
+    {
+        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">Zum Hochladen anmelden</a>
+    }
+</div>
+
+@if (TempData["SetupMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SetupMessage"]</div>
+}
+
+<!-- Filter: Simulation -> Auto -> Strecke -->
+<form asp-action="Index" method="get" class="card card-body mb-4"
+      data-setup-cascade
+      data-cars-url="@Url.Action("Cars", "Setup")"
+      data-tracks-url="@Url.Action("Tracks", "Setup")">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" for="sim">Simulation</label>
+            <select id="sim" name="sim" class="form-select" asp-items="simList" data-sim-select>
+                <option value="">Alle</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="carId">Auto</label>
+            <select id="carId" name="carId" class="form-select" asp-items="carList" data-car-select data-selected="@(ViewBag.CarId)">
+                <option value="">Alle</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="trackId">Strecke</label>
+            <select id="trackId" name="trackId" class="form-select" asp-items="trackList" data-track-select data-selected="@(ViewBag.TrackId)">
+                <option value="">Alle</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Filtern</button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Zurücksetzen</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">Keine Setups gefunden. Passe die Filter an oder lade das erste Setup hoch.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+        @foreach (var s in Model)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">@(string.IsNullOrWhiteSpace(s.Name) ? (s.Car?.Name ?? "Setup") : s.Name)</h5>
+                            <span class="badge bg-secondary">@SimGameInfo.DisplayName(s.Sim)</span>
+                        </div>
+                        <h6 class="card-subtitle mb-2 text-muted">@s.Car?.Name &middot; @s.Track?.Name</h6>
+
+                        @if (!string.IsNullOrWhiteSpace(s.Description))
+                        {
+                            <p class="card-text small">@s.Description</p>
+                        }
+
+                        <ul class="list-unstyled small mb-0">
+                            @if (!string.IsNullOrWhiteSpace(s.LapTime))
+                            {
+                                <li><strong>Rundenzeit:</strong> @s.LapTime</li>
+                            }
+                            @if (s.TrackTempCelsius.HasValue)
+                            {
+                                <li><strong>Spurtemperatur:</strong> @s.TrackTempCelsius.Value °C</li>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(s.CreatorName))
+                            {
+                                <li><strong>Ersteller:</strong> @s.CreatorName</li>
+                            }
+                            <li><strong>Datei:</strong> @s.FileName (@(Math.Round(s.FileSize / 1024.0, 1)) KB)</li>
+                            <li class="text-muted">@s.CreatedAt.ToLocalTime().ToString("g")</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        @if (isLoggedIn)
+                        {
+                            <a asp-action="Download" asp-route-id="@s.Id" class="btn btn-sm btn-success">Download</a>
+                        }
+                        else
+                        {
+                            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-sm btn-outline-secondary">Anmelden zum Download</a>
+                        }
+
+                        @if (currentUserId != null && s.OwnerId == currentUserId)
+                        {
+                            <form asp-action="Delete" asp-route-id="@s.Id" method="post"
+                                  onsubmit="return confirm('Dieses Setup wirklich löschen?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/setup-hub.js" asp-append-version="true"></script>
+}

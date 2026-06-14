@@ -14,7 +14,7 @@ namespace SimracingUtility
             // Add services to the container.
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString));
+                options.UseNpgsql(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
@@ -36,10 +36,20 @@ namespace SimracingUtility
                 app.UseHsts();
             }
 
+            // Datenbank migrieren und Stammdaten (Autos/Strecken) seeden.
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var db = services.GetRequiredService<ApplicationDbContext>();
+                db.Database.Migrate();
+                SimDataSeeder.Seed(db, app.Environment, services.GetService<ILoggerFactory>()?.CreateLogger("SimDataSeeder"));
+            }
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 

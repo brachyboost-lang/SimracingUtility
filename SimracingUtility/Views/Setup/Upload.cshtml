@@ -1,0 +1,94 @@
+@model SimracingUtility.Models.SetupUploadViewModel
+@{
+    ViewData["Title"] = "Setup hochladen";
+    var simList = ViewBag.SimList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+}
+
+<h1 class="mb-4">Setup hochladen</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form asp-action="Upload" method="post" enctype="multipart/form-data"
+              data-setup-cascade
+              data-cars-url="@Url.Action("Cars", "Setup")"
+              data-tracks-url="@Url.Action("Tracks", "Setup")">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Sim" class="form-label">Simulation</label>
+                <select asp-for="Sim" class="form-select" asp-items="simList" data-sim-select>
+                    <option value="">-- Simulation wählen --</option>
+                </select>
+                <span asp-validation-for="Sim" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CarId" class="form-label">Auto</label>
+                    <select asp-for="CarId" class="form-select" data-car-select data-selected="@Model.CarId">
+                        <option value="">-- zuerst Simulation wählen --</option>
+                    </select>
+                    <span asp-validation-for="CarId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TrackId" class="form-label">Strecke</label>
+                    <select asp-for="TrackId" class="form-select" data-track-select data-selected="@Model.TrackId">
+                        <option value="">-- zuerst Simulation wählen --</option>
+                    </select>
+                    <span asp-validation-for="TrackId" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="File" class="form-label">Setup-Datei</label>
+                <input asp-for="File" type="file" class="form-control" />
+                <div class="form-text">Erlaubt: iRacing <code>.sto</code>, Le Mans Ultimate <code>.svm</code>, ACC <code>.json</code> (max. 5 MB).</div>
+                <span asp-validation-for="File" class="text-danger"></span>
+            </div>
+
+            <hr />
+            <p class="text-muted">Optionale Angaben</p>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" placeholder="z. B. Quali Trim Spa" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreatorName" class="form-label"></label>
+                    <input asp-for="CreatorName" class="form-control" />
+                    <span asp-validation-for="CreatorName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="LapTime" class="form-label"></label>
+                    <input asp-for="LapTime" class="form-control" placeholder="1:58.231" />
+                    <span asp-validation-for="LapTime" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TrackTempCelsius" class="form-label"></label>
+                    <input asp-for="TrackTempCelsius" type="number" step="any" class="form-control" placeholder="28" />
+                    <span asp-validation-for="TrackTempCelsius" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Hochladen</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Abbrechen</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/setup-hub.js" asp-append-version="true"></script>
+}

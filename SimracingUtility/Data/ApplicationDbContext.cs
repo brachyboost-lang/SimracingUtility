@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SimracingUtility.Models;
 
@@ -10,13 +11,17 @@ namespace SimracingUtility.Data
             : base(options)
         {
         }
+
         public DbSet<RecentFuelCalculation> RecentFuelCalculations { get; set; }
+        public DbSet<Setup> Setups { get; set; }
+        public DbSet<SimCar> SimCars { get; set; }
+        public DbSet<SimTrack> SimTracks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Map the RecentFuelCalculation entity to the existing "FuelCalc" table so existing data remains accessible.
+            // Bestehende Fuel-Calc-Tabelle.
             modelBuilder.Entity<RecentFuelCalculation>(b =>
             {
                 b.ToTable("FuelCalc");
@@ -24,7 +29,47 @@ namespace SimracingUtility.Data
                 b.Property(x => x.TrackName).IsRequired();
                 b.Property(x => x.CarName).IsRequired();
                 b.Property(x => x.CarClass).IsRequired();
-                b.Property(x => x.RowVersion).IsRowVersion();
+            });
+
+            modelBuilder.Entity<SimCar>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Slug).IsRequired().HasMaxLength(80);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(150);
+                b.HasIndex(x => new { x.Sim, x.Slug }).IsUnique();
+            });
+
+            modelBuilder.Entity<SimTrack>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Slug).IsRequired().HasMaxLength(80);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(150);
+                b.HasIndex(x => new { x.Sim, x.Slug }).IsUnique();
+            });
+
+            modelBuilder.Entity<Setup>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.FileName).IsRequired().HasMaxLength(260);
+                b.Property(x => x.ContentType).HasMaxLength(150);
+
+                b.HasOne(x => x.Owner)
+                    .WithMany()
+                    .HasForeignKey(x => x.OwnerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.Car)
+                    .WithMany(c => c.Setups)
+                    .HasForeignKey(x => x.CarId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasOne(x => x.Track)
+                    .WithMany(t => t.Setups)
+                    .HasForeignKey(x => x.TrackId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasIndex(x => new { x.Sim, x.CarId, x.TrackId });
+                b.HasIndex(x => x.OwnerId);
             });
         }
     }

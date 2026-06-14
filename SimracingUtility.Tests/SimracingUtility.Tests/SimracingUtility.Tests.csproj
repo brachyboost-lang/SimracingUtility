@@ -8,12 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="FuelCalcViewModelTests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit.v3" Version="2.0.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 
@@ -22,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SimracingUtility\SimracingUtility\SimracingUtility.csproj" />
+    <ProjectReference Include="..\..\SimracingUtility\SimracingUtility.csproj" />
   </ItemGroup>
 
 </Project>
