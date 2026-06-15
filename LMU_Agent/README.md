@@ -104,6 +104,9 @@ Der Ergebnis-Ordner wird in dieser Reihenfolge bestimmt:
 Existiert der Ordner nicht, wird eine Warnung protokolliert und der Lauf
 übersprungen (kein Absturz).
 
+**Eigener Fahrername** (optional): `Lmu:DriverName` setzen, um den Besitzer
+eindeutig festzulegen. Leer = automatisch der Fahrer mit den meisten Ergebnissen.
+
 ### Push an die Website
 
 Damit der Dienst die Statistiken an die SimracingUtility-Website sendet, im
@@ -125,19 +128,25 @@ Ist `BaseUrl` leer, wird der Push übersprungen. Der `ApiKey` muss mit
 **SQLite** als lokale Datei-Datenbank unter
 `%LOCALAPPDATA%\LMUAgent\lmu_agent.db` – ein **fester, gemeinsamer Pfad**, damit
 Dienst (Schreiber) und Web-API (Leser) unabhängig vom Arbeitsverzeichnis dieselbe
-Datenbank verwenden. Das Schema wird beim Start per
-`Database.EnsureCreatedAsync()` angelegt – es gibt (noch) **keine EF-Migrationen**.
+Datenbank verwenden. Die DB ist ein **aus den XML-Dateien reproduzierbarer
+Cache**: beim Start wird sie per `EnsureCreatedAsync()` angelegt. Statt
+EF-Migrationen trägt der Kontext eine `SchemaVersion`; ändert sich das Schema
+(neuer Agent), wird die Datei verworfen und neu aufgebaut – ein Update mit neuen
+Spalten bricht also nicht.
 
 ### Berechnetes Nutzer-Dashboard
 
-Ausgewertet wird **der Besitzer** (menschlicher Fahrer mit den meisten
-Ergebnissen). Wichtige Regeln aus dem Abgleich mit echten Dateien:
+Ausgewertet wird **der Besitzer**: der via `Lmu:DriverName` konfigurierte Fahrer,
+sonst der menschliche Fahrer mit den meisten Ergebnissen. Wichtige Regeln aus dem
+Abgleich mit echten Dateien:
 
-- **KI-Rennen sind Trainingsrennen** und werden komplett ignoriert (jede Session
-  mit einem Bot `isPlayer=0`).
-- **Sprint vs. Endurance** getrennt (Renndauer `<Minutes>` ≥ 90 = Endurance), je
-  mit: Rennen, **P1**, **Podium**, **Top 5/10/50 %**, **DNF**, beste Position.
-  Positionen sind **Klassenpositionen** (LMU ist multiclass); DNFs zählen separat.
+- **Nur Wettkampfrennen**: eine Session zählt nur mit **≥ 2 menschlichen Fahrern**.
+  Reine KI-/Solo-Trainingsrennen fallen raus, echte Online-Rennen mit ein paar
+  KI-Auffüllautos bleiben erhalten.
+- **Sprint vs. Endurance** getrennt (Renndauer ≥ 90 min = Endurance; bei reinen
+  Rundenrennen aus Rundenzahl × bester Runde geschätzt), je mit: Rennen, **P1**,
+  **Podium**, **Top 5/10/50 %**, **DNF**, beste Position. Positionen sind
+  **Klassenpositionen** (LMU ist multiclass); DNFs zählen separat.
 - **Beste Runde je Strecke** statt eines globalen Werts.
 - **„Am meisten gefahren mit"**: menschliche Fahrer, mit denen man am häufigsten
   im selben Rennen war. Echte *Teamkollegen* (Fahrerwechsel) sind nicht ableitbar –
@@ -205,6 +214,7 @@ pwsh ./publish.ps1
 3. **Rechtsklick aufs Tray-Symbol** → „Ergebnis-Ordner öffnen",
    „Telemetrie-Ordner öffnen" oder **„Beenden"** (stoppt den Agent).
 
+Es läuft immer nur **eine Instanz** (erneutes Starten zeigt nur einen Hinweis).
 Der Steam-/Ergebnis-Pfad wird automatisch erkannt; nur bei exotischen
 Installationen muss `LMU_RESULTS_PATH` bzw. `Lmu:ResultsPath` gesetzt werden.
 Für den Autostart die `.exe` in den Windows-Autostart-Ordner legen
@@ -215,9 +225,10 @@ Für den Autostart die `.exe` in den Windows-Autostart-Ordner legen
 Der Agent stellt lokal einen kleinen HTTP-Endpunkt bereit
 (`http://localhost:5601/telemetry?track=<Strecke>`, Port via `Telemetry:Port`),
 der die MoTeC-Dateien einer Strecke als **ZIP** ausliefert (`.ld` + `.ldx`
-zusammen) – die Dateien liegen in `<Spiel>\LOG`. Die Website-Seite **„Meine
-Stats"** verlinkt diesen Download je Strecke (funktioniert auf dem Rechner, auf
-dem der Agent läuft).
+zusammen) – die Dateien liegen in `<Spiel>\LOG`. Standardmäßig wird nur die
+**jüngste Session** der Strecke geliefert (klein & relevant); mit `&all=1` alle
+Sessions. Die Website-Seite **„Meine Stats"** verlinkt diesen Download je Strecke
+(funktioniert auf dem Rechner, auf dem der Agent läuft).
 
 ## 🛠️ Entwicklung
 
