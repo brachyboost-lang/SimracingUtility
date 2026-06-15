@@ -16,6 +16,8 @@ namespace SimracingUtility.Data
         public DbSet<Setup> Setups { get; set; }
         public DbSet<SimCar> SimCars { get; set; }
         public DbSet<SimTrack> SimTracks { get; set; }
+        public DbSet<LmuDriverStats> LmuDriverStats { get; set; }
+        public DbSet<LmuCompanion> LmuCompanions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,6 +72,26 @@ namespace SimracingUtility.Data
 
                 b.HasIndex(x => new { x.Sim, x.CarId, x.TrackId });
                 b.HasIndex(x => x.OwnerId);
+            });
+
+            // Vom LMU-Agent gepushte Statistiken.
+            modelBuilder.Entity<LmuDriverStats>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.DriverName).IsRequired().HasMaxLength(150);
+                b.HasIndex(x => x.DriverName).IsUnique();
+
+                b.HasMany(x => x.Companions)
+                    .WithOne(c => c.DriverStats)
+                    .HasForeignKey(c => c.LmuDriverStatsId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<LmuCompanion>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(150);
+                b.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20);
             });
         }
     }
