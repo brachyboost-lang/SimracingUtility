@@ -1,0 +1,97 @@
+@using SimracingUtility.Models
+@model LmuDriverStats
+@{
+    ViewData["Title"] = "Meine LMU-Statistiken";
+    string Lap(double s) => s > 0 ? TimeSpan.FromSeconds(s).ToString(@"m\:ss\.fff") : "–";
+}
+
+<h1 class="mb-3">Meine LMU-Statistiken</h1>
+
+@if (Model == null)
+{
+    <div class="alert alert-info">
+        Es wurden noch keine Daten empfangen. Starte den <strong>LMU-Agent</strong>
+        (mit gesetztem <code>Website:BaseUrl</code>), damit er deine Renndaten
+        überträgt. Den Agent gibt es unter
+        <a asp-controller="Download" asp-action="Index">LMU-Agent</a>.
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">@Model.DriverName</h2>
+        <span class="text-muted small">Stand: @Model.UpdatedAt.ToLocalTime().ToString("g")</span>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        @{
+            var kpis = new (string Label, string Value)[]
+            {
+                ("Rennen", Model.TotalRaces.ToString()),
+                ("Siege (P1)", Model.Wins.ToString()),
+                ("Podien", Model.Podiums.ToString()),
+                ("Top 5", Model.Top5.ToString()),
+                ("Top 10", Model.Top10.ToString()),
+                ("Top 50 %", Model.TopHalf.ToString()),
+                ("DNF", Model.Dnf.ToString()),
+                ("Beste Position", Model.BestPosition > 0 ? Model.BestPosition.ToString() : "–"),
+                ("Beste Runde", Lap(Model.FastestLapTime)),
+                ("Letztes Rennen", Model.LastRaceDate == DateTime.MinValue ? "–" : Model.LastRaceDate.ToLocalTime().ToString("yyyy-MM-dd")),
+            };
+        }
+        @foreach (var k in kpis)
+        {
+            <div class="col">
+                <div class="card h-100 text-center">
+                    <div class="card-body py-3">
+                        <div class="display-6">@k.Value</div>
+                        <div class="text-muted small">@k.Label</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <h3 class="h5">Am meisten mit (Teamkollegen)</h3>
+            @{ var mates = Model.Companions.Where(c => c.Kind == CompanionKind.Teammate).OrderByDescending(c => c.RacesShared).ToList(); }
+            @if (mates.Count == 0)
+            {
+                <p class="text-muted">Keine Teamkollegen erfasst.</p>
+            }
+            else
+            {
+                <ul class="list-group">
+                    @foreach (var c in mates)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@c.Name</span>
+                            <span class="badge text-bg-primary rounded-pill">@c.RacesShared</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+        <div class="col-md-6">
+            <h3 class="h5">Am meisten gegen (Gegner)</h3>
+            @{ var opps = Model.Companions.Where(c => c.Kind == CompanionKind.Opponent).OrderByDescending(c => c.RacesShared).ToList(); }
+            @if (opps.Count == 0)
+            {
+                <p class="text-muted">Keine Gegner erfasst.</p>
+            }
+            else
+            {
+                <ul class="list-group">
+                    @foreach (var c in opps)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@c.Name</span>
+                            <span class="badge text-bg-secondary rounded-pill">@c.RacesShared</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
