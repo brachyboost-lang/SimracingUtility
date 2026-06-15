@@ -14,7 +14,10 @@ namespace SimracingUtility
             // Add services to the container.
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(connectionString));
+                options.UseNpgsql(connectionString)
+                    // Laufzeit-False-Positive von EF 10 unterdrücken: das Tooling
+                    // (dotnet ef) bestätigt, dass keine Modelländerungen offen sind.
+                    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)

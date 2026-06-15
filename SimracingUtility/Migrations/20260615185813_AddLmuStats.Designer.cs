@@ -12,7 +12,7 @@ using SimracingUtility.Data;
 namespace SimracingUtility.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260615185326_AddLmuStats")]
+    [Migration("20260615185813_AddLmuStats")]
     partial class AddLmuStats
     {
         /// <inheritdoc />
