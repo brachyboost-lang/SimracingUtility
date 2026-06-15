@@ -1,18 +1,19 @@
 # LMU Agent – Le Mans Ultimate Daten-Agent
 
-Ein eigenständiger Windows-Dienst, der Renndaten aus dem Spiel **Le Mans Ultimate**
-ausliest, lokal speichert und über eine REST-API bereitstellt. Der Agent ist ein
-**von der SimracingUtility-Website getrenntes Projekt**; die Website bietet ihn
-lediglich zum Download an (siehe [Integration mit der Website](#integration-mit-der-website)).
+Eine eigenständige **Windows-Tray-Anwendung**, die Renndaten aus dem Spiel
+**Le Mans Ultimate** ausliest, lokal in SQLite speichert, die Auswertung an die
+SimracingUtility-Website pusht und Telemetrie-Downloads bereitstellt. Der Agent
+ist ein **von der Website getrenntes Projekt**; die Website bietet ihn zum
+Download an (siehe [Integration mit der Website](#integration-mit-der-website)).
 
 ## 📋 Übersicht
 
-- **Events** – liest anstehende und vergangene Renn-Events
-- **Race Results** – speichert Ergebnisse der letzten Rennen
-- **Driver Profiles** – Fahrer-Profilinformationen
-- **Statistics** – berechnet pro Fahrer Siege, Podien, beste Runde u. a.
-- **REST API** – stellt die Daten über HTTP bereit
-- **Windows-Dienst** – läuft als Hintergrunddienst und liest die Daten periodisch neu ein
+- **Race Results** – liest die XML-Ergebnisdateien (rFactor-2-Format)
+- **Statistik** – Sprint/Endurance, Top-Platzierungen, beste Runde je Strecke,
+  häufigste Mitstreiter & gegnerische Teams (KI-Rennen ausgeschlossen)
+- **Push** – sendet die Auswertung an die Website (REST)
+- **Telemetrie** – lokaler Download der `.ld`/`.ldx`-Dateien je Strecke
+- **Tray-App** – läuft im Infobereich, liest die Daten periodisch neu ein
 
 ## 🏗️ Architektur
 
@@ -27,32 +28,35 @@ Stellt die REST-Endpunkte über **MVC-Controller** bereit
 ([`Controllers/`](src/LMU.Agent.UI/Controllers)) und registriert die Core-Dienste
 per Dependency Injection.
 
-### 3. LMU.Agent.Service (`net10.0`, Worker)
-Der eigentliche Hintergrunddienst. Nutzt den **Generic Host** mit
-`AddWindowsService()` und einem [`Worker`](src/LMU.Agent.Service/Worker.cs)
-(`BackgroundService`), der die LMU-Dateien in einem Intervall (Standard: 5 Min.)
-einliest und die Statistiken aktualisiert.
+### 3. LMU.Agent.Service (`net10.0-windows`, Tray-App)
+Die ausführbare **WinForms-Tray-App** ([`Program.cs`](src/LMU.Agent.Service/Program.cs),
+[`TrayAppContext`](src/LMU.Agent.Service/TrayAppContext.cs)). Im Hintergrund läuft
+über den **Generic Host** ein [`Worker`](src/LMU.Agent.Service/Worker.cs)
+(`BackgroundService`), der die LMU-Dateien im Intervall (Standard: 5 Min.) einliest,
+die Auswertung pusht; zusätzlich liefert der
+[`TelemetryServer`](src/LMU.Agent.Service/TelemetryServer.cs) Telemetrie-ZIPs aus.
 
 ## 📁 Projektstruktur
 
 ```
 LMU_Agent/
 ├── LMU.Agent.slnx
-├── publish.ps1                 # baut & paketiert den Dienst für die Website
+├── publish.ps1                 # baut & paketiert die App für den Website-Download
 ├── README.md
 ├── src/
 │   ├── LMU.Agent.Core/
-│   │   ├── Models/             # RaceResult, Statistics, Event, DriverProfile
+│   │   ├── Models/             # RaceResult, UserDashboard, Statistics, …
 │   │   ├── Data/               # LMUAgentContext (SQLite, gemeinsamer Pfad)
-│   │   └── Services/           # I*Parser + Implementierungen, LmuPathResolver
-│   ├── LMU.Agent.UI/
-│   │   ├── Controllers/        # API: Results/Stats/Events/Profiles  +  StatsController
-│   │   ├── Views/Stats/        # HTML-Statistikseite
-│   │   └── Program.cs
-│   └── LMU.Agent.Service/
-│       ├── Program.cs          # Generic Host + AddWindowsService
-│       ├── Worker.cs           # BackgroundService (periodische Erfassung)
-│       └── appsettings.json    # Lmu:ResultsPath
+│   │   └── Services/           # Parser, DashboardBuilder, LmuPathResolver,
+│   │   │                       #   TelemetryLocator, StandardTeams
+│   ├── LMU.Agent.UI/           # Legacy: REST-API + /stats-Seite (optional)
+│   └── LMU.Agent.Service/      # Tray-App (net10.0-windows)
+│       ├── Program.cs          # Generic Host + WinForms-Tray
+│       ├── TrayAppContext.cs   # Tray-Symbol & Menü
+│       ├── Worker.cs           # BackgroundService (Erfassung + Push)
+│       ├── StatsPushClient.cs  # POST an die Website
+│       ├── TelemetryServer.cs  # lokaler ZIP-Download-Endpunkt
+│       └── appsettings.json    # Lmu:ResultsPath, Website, Telemetry
 └── tests/
     └── LMU.Agent.Tests/        # xUnit-Tests (Parser, Statistik, Pfad)
 ```
