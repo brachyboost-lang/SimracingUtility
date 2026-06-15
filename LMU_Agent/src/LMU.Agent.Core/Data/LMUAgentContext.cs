@@ -5,24 +5,47 @@ namespace LMU.Agent.Core.Data;
 
 public class LMUAgentContext : DbContext
 {
+    // Bei jeder schemaverändernden Modelländerung erhöhen. Die SQLite-DB ist nur
+    // ein aus den XML-Dateien reproduzierbarer Cache – bei abweichender Version
+    // wird sie verworfen und neu aufgebaut (Ersatz für Migrationen).
+    public const int SchemaVersion = 1;
+
     public DbSet<Event> Events { get; set; }
     public DbSet<RaceResult> RaceResults { get; set; }
     public DbSet<DriverProfile> DriverProfiles { get; set; }
     public DbSet<Statistics> Statistics { get; set; }
 
+    /// <summary>Fester, gemeinsamer Speicherort der SQLite-Datei.</summary>
+    public static string DbDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LMUAgent");
+
+    public static string DbPath => Path.Combine(DbDirectory, "lmu_agent.db");
+
+    /// <summary>
+    /// Verwirft die DB, wenn die gespeicherte Schema-Version abweicht (z. B. nach
+    /// einem Agent-Update mit neuen Spalten), und schreibt die aktuelle Version.
+    /// Muss vor <c>EnsureCreated</c> aufgerufen werden.
+    /// </summary>
+    public static void PrepareDatabaseFile()
+    {
+        Directory.CreateDirectory(DbDirectory);
+        var versionFile = DbPath + ".schema";
+        var stored = File.Exists(versionFile) ? File.ReadAllText(versionFile).Trim() : null;
+
+        if (File.Exists(DbPath) && stored != SchemaVersion.ToString())
+        {
+            foreach (var f in new[] { DbPath, DbPath + "-wal", DbPath + "-shm" })
+                if (File.Exists(f)) File.Delete(f);
+        }
+        File.WriteAllText(versionFile, SchemaVersion.ToString());
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            // Fester, gemeinsamer Speicherort, damit Dienst und Web-API unabhängig
-            // vom Arbeitsverzeichnis dieselbe Datenbank verwenden.
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "LMUAgent");
-            Directory.CreateDirectory(dir);
-            var dbPath = Path.Combine(dir, "lmu_agent.db");
-
-            optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            Directory.CreateDirectory(DbDirectory);
+            optionsBuilder.UseSqlite($"Data Source={DbPath}");
         }
     }
 

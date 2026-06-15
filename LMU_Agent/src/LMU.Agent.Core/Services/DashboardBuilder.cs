@@ -20,24 +20,37 @@ public static class DashboardBuilder
 {
     private const int EnduranceMinutes = 90;
 
-    public static UserDashboard Build(IReadOnlyList<RaceResult> all, int topN = 10)
+    public static UserDashboard Build(
+        IReadOnlyList<RaceResult> all, int topN = 10, string? configuredDriver = null)
     {
         var dashboard = new UserDashboard();
 
-        // KI-/Trainingsrennen ausschließen: jede Session, in der ein Bot auftaucht.
-        var aiSessions = all
-            .Where(r => !r.IsPlayer)
-            .Select(r => r.SessionId)
-            .ToHashSet();
+        // Wettkampfrennen = Session mit mindestens zwei menschlichen Fahrern.
+        // Reine KI-/Solo-Trainingsrennen (nur ich gegen Bots) fallen damit raus,
+        // echte Online-Rennen mit ein paar KI-Auffüllautos bleiben erhalten.
+        var humansPerSession = all
+            .Where(r => r.IsPlayer)
+            .GroupBy(r => r.SessionId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.DriverName).Distinct().Count());
 
-        var competitive = all.Where(r => !aiSessions.Contains(r.SessionId)).ToList();
+        var competitive = all
+            .Where(r => humansPerSession.GetValueOrDefault(r.SessionId) >= 2)
+            .ToList();
         if (competitive.Count == 0)
         {
             return dashboard;
         }
 
-        // Besitzer = Fahrer mit den meisten Ergebnissen in den Wettkampfrennen.
-        var me = competitive
+        // Besitzer: konfigurierter Fahrername (falls in den Daten vorhanden),
+        // sonst der menschliche Fahrer mit den meisten Ergebnissen.
+        var humans = competitive.Where(r => r.IsPlayer).ToList();
+        string? me = null;
+        if (!string.IsNullOrWhiteSpace(configuredDriver))
+        {
+            me = humans.Select(r => r.DriverName)
+                .FirstOrDefault(n => string.Equals(n, configuredDriver, StringComparison.OrdinalIgnoreCase));
+        }
+        me ??= humans
             .GroupBy(r => r.DriverName)
             .OrderByDescending(g => g.Count())
             .First().Key;
@@ -100,7 +113,7 @@ public static class DashboardBuilder
         var mySessions = myResults.Select(r => r.SessionId).ToHashSet();
 
         return competitive
-            .Where(r => r.DriverName != me && mySessions.Contains(r.SessionId))
+            .Where(r => r.IsPlayer && r.DriverName != me && mySessions.Contains(r.SessionId))
             // ein Fahrer kann pro Session nur einmal zählen
             .GroupBy(r => r.DriverName)
             .Select(g => new CompanionCount
@@ -136,7 +149,7 @@ public static class DashboardBuilder
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return competitive
-            .Where(r => r.DriverName != me && mySessions.Contains(r.SessionId))
+            .Where(r => r.IsPlayer && r.DriverName != me && mySessions.Contains(r.SessionId))
             .Where(r => !string.IsNullOrWhiteSpace(r.TeamName)
                         && multiDriverTeams.Contains(r.TeamName)  // echtes Team (≥2 Fahrer)
                         && !standard.Contains(r.TeamName)   // Stock-Livery

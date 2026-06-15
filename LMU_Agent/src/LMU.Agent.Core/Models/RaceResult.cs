@@ -16,8 +16,17 @@ public class RaceResult
     /// <summary>Geplante Renndauer in Minuten (aus &lt;Minutes&gt;); 0 bei reinen Rundenrennen.</summary>
     public int RaceMinutes { get; set; }
 
-    /// <summary>Endurance ab 90 Minuten Renndauer.</summary>
-    public bool IsEndurance => RaceMinutes >= 90;
+    /// <summary>Geplante Rundenzahl (aus &lt;RaceLaps&gt;); 0 bei Zeitrennen.</summary>
+    public int RaceLaps { get; set; }
+
+    /// <summary>
+    /// Endurance ab 90 Minuten. Bei reinen Rundenrennen (keine Minutenangabe)
+    /// wird die Dauer aus geplanter Rundenzahl × bester Rundenzeit geschätzt.
+    /// </summary>
+    public bool IsEndurance =>
+        RaceMinutes >= 90
+        || (RaceMinutes <= 0 && RaceLaps > 0 && BestLapTime > 0
+            && RaceLaps * BestLapTime >= 90 * 60);
 
     /// <summary>Team-/Einsatzname des Autos – Fahrer mit gleichem Wert im selben
     /// Rennen sind Teamkollegen (Fahrerwechsel in der Endurance).</summary>

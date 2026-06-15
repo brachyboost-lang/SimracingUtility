@@ -19,6 +19,12 @@ public class StandardTeamsTests
     [InlineData("Team JB17 MOTORSPORT")]
     [InlineData("404 Grip Not Found")]
     [InlineData("")]
+    [InlineData("Team WRTesting")]      // darf NICHT als "Team WRT" zählen (Wortgrenze)
+    [InlineData("United Autosportsmen")] // darf NICHT als "United Autosports" zählen
     public void IsOfficial_FalseForCustomTeams(string name)
         => Assert.False(StandardTeams.IsOfficial(name));
+
+    [Fact]
+    public void IsOfficial_TrueWhenOfficialNameIsEmbeddedAsWords()
+        => Assert.True(StandardTeams.IsOfficial("BMW M Team WRT"));
 }

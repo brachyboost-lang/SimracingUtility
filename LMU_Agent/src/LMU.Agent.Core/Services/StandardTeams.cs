@@ -35,27 +35,37 @@ public static class StandardTeams
     private static readonly HashSet<string> NormalizedNames =
         OfficialNames.Select(Normalize).ToHashSet();
 
-    /// <summary>True, wenn der Teamname einen offiziellen Teamnamen enthält.</summary>
+    /// <summary>
+    /// True, wenn der Teamname die Wortfolge eines offiziellen Teamnamens enthält.
+    /// Es wird auf Wortgrenzen abgeglichen (Tokens), damit z. B. „Team WRTesting"
+    /// nicht fälschlich als „Team WRT" zählt.
+    /// </summary>
     public static bool IsOfficial(string? teamName)
     {
         if (string.IsNullOrWhiteSpace(teamName)) return false;
-        var norm = Normalize(teamName);
+        var norm = " " + Normalize(teamName) + " ";
         foreach (var official in NormalizedNames)
         {
-            if (official.Length > 0 && norm.Contains(official))
+            if (official.Length > 0 && norm.Contains(" " + official + " "))
                 return true;
         }
         return false;
     }
 
+    /// <summary>Klein, nur Buchstaben/Ziffern je Token, durch einzelne Leerzeichen getrennt.</summary>
     private static string Normalize(string s)
     {
         var sb = new System.Text.StringBuilder(s.Length);
+        var lastWasSpace = true; // führende Leerzeichen vermeiden
         foreach (var ch in s)
         {
-            if (ch is (>= 'a' and <= 'z') or (>= '0' and <= '9')) sb.Append(ch);
-            else if (ch is >= 'A' and <= 'Z') sb.Append((char)(ch + 32));
+            if (ch is (>= 'a' and <= 'z') or (>= '0' and <= '9'))
+            { sb.Append(ch); lastWasSpace = false; }
+            else if (ch is >= 'A' and <= 'Z')
+            { sb.Append((char)(ch + 32)); lastWasSpace = false; }
+            else if (!lastWasSpace)
+            { sb.Append(' '); lastWasSpace = true; }
         }
-        return sb.ToString();
+        return sb.ToString().Trim();
     }
 }

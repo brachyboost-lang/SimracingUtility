@@ -31,6 +31,8 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Cache-DB bei Schemaänderung verwerfen (Ersatz für Migrationen), dann anlegen.
+        LMUAgentContext.PrepareDatabaseFile();
         using (var scope = _services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<LMUAgentContext>();
@@ -84,7 +86,7 @@ public class Worker : BackgroundService
 
             // Nutzer-Dashboard bauen und an die Website pushen.
             var all = await context.RaceResults.ToListAsync();
-            var dashboard = DashboardBuilder.Build(all);
+            var dashboard = DashboardBuilder.Build(all, configuredDriver: _config["Lmu:DriverName"]);
             await pushClient.PushAsync(dashboard, CancellationToken.None);
 
             _logger.LogInformation("LMU Agent: Datenerfassung abgeschlossen.");

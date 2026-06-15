@@ -44,6 +44,28 @@ public static class TelemetryLocator
     }
 
     /// <summary>
+    /// Reduziert eine Trefferliste auf die Dateien der jüngsten Session. Die
+    /// Dateinamen beginnen mit „JJJJ-MM-TT - HH-MM-SS - …", sortieren also
+    /// lexikografisch = chronologisch; .ld und .ldx einer Session teilen den
+    /// Basisnamen (ohne Endung).
+    /// </summary>
+    public static List<string> LatestSessionFiles(IEnumerable<string> files)
+    {
+        var latestBase = files
+            .Select(f => Path.GetFileNameWithoutExtension(f))
+            .OrderByDescending(b => b, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        if (latestBase == null) return new List<string>();
+
+        return files
+            .Where(f => string.Equals(Path.GetFileNameWithoutExtension(f), latestBase,
+                StringComparison.OrdinalIgnoreCase))
+            .OrderBy(f => f)
+            .ToList();
+    }
+
+    /// <summary>
     /// Reduziert auf ein reines ASCII-Skelett (nur a-z0-9, klein). Bewusst werden
     /// ALLE Nicht-ASCII-Zeichen verworfen – die LMU-Telemetrie-Dateinamen enthalten
     /// teils Mojibake ("AutÃ³dromo" statt "Autódromo"), während der Streckenname aus

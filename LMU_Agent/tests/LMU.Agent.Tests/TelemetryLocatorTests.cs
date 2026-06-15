@@ -50,4 +50,21 @@ public class TelemetryLocatorTests
         var hits = TelemetryLocator.FindTelemetryFiles(@"X:\does\not\exist", "Monza");
         Assert.Empty(hits);
     }
+
+    [Fact]
+    public void LatestSessionFiles_KeepsOnlyNewestSessionPair()
+    {
+        var files = new[]
+        {
+            @"C:\LOG\2026-02-01 - 10-00-00 - Monza - R1.ld",
+            @"C:\LOG\2026-02-01 - 10-00-00 - Monza - R1.ldx",
+            @"C:\LOG\2026-05-16 - 00-31-12 - Monza - R1.ld",   // jüngste Session
+            @"C:\LOG\2026-05-16 - 00-31-12 - Monza - R1.ldx",
+        };
+
+        var latest = TelemetryLocator.LatestSessionFiles(files);
+
+        Assert.Equal(2, latest.Count);
+        Assert.All(latest, f => Assert.Contains("2026-05-16", f));
+    }
 }

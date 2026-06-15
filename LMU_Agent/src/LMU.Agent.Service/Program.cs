@@ -15,6 +15,15 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
+        // Nur eine Instanz zulassen (sonst Port-Konflikt + doppelter Loop).
+        using var single = new Mutex(initiallyOwned: true, @"Global\LMU.Agent.Service", out var isNew);
+        if (!isNew)
+        {
+            MessageBox.Show("Der LMU Agent läuft bereits.", "LMU Agent",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
         // Hintergrund-Host: Erfassung + Push (Worker).
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddScoped<LMUAgentContext>();

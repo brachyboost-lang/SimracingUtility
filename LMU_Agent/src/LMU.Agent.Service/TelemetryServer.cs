@@ -68,10 +68,17 @@ public sealed class TelemetryServer : IDisposable
         // Query selbst UTF-8-sicher parsen (HttpListener.QueryString decodiert
         // %C3%B3 & Co. nicht zuverlässig als UTF-8).
         var track = GetQueryValue(ctx.Request.Url?.Query, "track");
+        var all = GetQueryValue(ctx.Request.Url?.Query, "all") is "1" or "true";
         var logFolder = TelemetryLocator.GameLogFolderFromResults(_resultsPath);
         var files = logFolder == null
             ? new List<string>()
             : TelemetryLocator.FindTelemetryFiles(logFolder, track);
+
+        // Standardmäßig nur die jüngste Session (klein & relevant); ?all=1 = alles.
+        if (!all)
+        {
+            files = TelemetryLocator.LatestSessionFiles(files);
+        }
 
         if (files.Count == 0)
         {
