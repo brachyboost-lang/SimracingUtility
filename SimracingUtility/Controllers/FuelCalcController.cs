@@ -145,6 +145,12 @@ namespace SimracingUtility.Controllers
             if (model == null)
                 return BadRequest();
 
+            // Gleiche Validierung wie beim regulären POST Index – sonst greifen die
+            // [Required]-Regeln auf dem (Standard-)AJAX-Pfad nie und ungültige
+            // Berechnungen würden gespeichert.
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             // perform calculation
             model.CalculateFuel();
 

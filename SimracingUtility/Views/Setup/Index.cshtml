@@ -40,13 +40,13 @@
         </div>
         <div class="col-md-3">
             <label class="form-label" for="carId">Auto</label>
-            <select id="carId" name="carId" class="form-select" asp-items="carList" data-car-select data-selected="@(ViewBag.CarId)">
+            <select id="carId" name="carId" class="form-select" asp-items="carList" data-car-select data-placeholder="Alle" data-selected="@(ViewBag.CarId)">
                 <option value="">Alle</option>
             </select>
         </div>
         <div class="col-md-3">
             <label class="form-label" for="trackId">Strecke</label>
-            <select id="trackId" name="trackId" class="form-select" asp-items="trackList" data-track-select data-selected="@(ViewBag.TrackId)">
+            <select id="trackId" name="trackId" class="form-select" asp-items="trackList" data-track-select data-placeholder="Alle" data-selected="@(ViewBag.TrackId)">
                 <option value="">Alle</option>
             </select>
         </div>
@@ -63,6 +63,13 @@
 }
 else
 {
+    @if (ViewBag.OverviewCapped == true)
+    {
+        <div class="alert alert-info">
+            Es werden nur die neuesten @ViewBag.OverviewLimit Setups angezeigt.
+            Grenze die Auswahl über die Filter weiter ein.
+        </div>
+    }
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
         @foreach (var s in Model)
         {

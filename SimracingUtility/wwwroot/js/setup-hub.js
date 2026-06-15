@@ -39,21 +39,26 @@
         var carsUrl = root.getAttribute("data-cars-url");
         var tracksUrl = root.getAttribute("data-tracks-url");
 
+        // Platzhalter ist je Kontext konfigurierbar: im Filter "Alle", im
+        // Upload-Formular "-- Auto/Strecke wählen --".
+        var carPlaceholder = (carSelect && carSelect.getAttribute("data-placeholder")) || "-- Auto wählen --";
+        var trackPlaceholder = (trackSelect && trackSelect.getAttribute("data-placeholder")) || "-- Strecke wählen --";
+
         function refresh(preselectCar, preselectTrack) {
             var sim = simSelect.value;
             if (!sim) {
-                if (carSelect) fillSelect(carSelect, [], "-- zuerst Simulation wählen --", null);
-                if (trackSelect) fillSelect(trackSelect, [], "-- zuerst Simulation wählen --", null);
+                if (carSelect) fillSelect(carSelect, [], carPlaceholder, null);
+                if (trackSelect) fillSelect(trackSelect, [], trackPlaceholder, null);
                 return;
             }
             if (carSelect && carsUrl) {
                 loadList(carsUrl, sim)
-                    .then(function (items) { fillSelect(carSelect, items, "-- Auto wählen --", preselectCar); })
+                    .then(function (items) { fillSelect(carSelect, items, carPlaceholder, preselectCar); })
                     .catch(function () { fillSelect(carSelect, [], "-- Fehler beim Laden --", null); });
             }
             if (trackSelect && tracksUrl) {
                 loadList(tracksUrl, sim)
-                    .then(function (items) { fillSelect(trackSelect, items, "-- Strecke wählen --", preselectTrack); })
+                    .then(function (items) { fillSelect(trackSelect, items, trackPlaceholder, preselectTrack); })
                     .catch(function () { fillSelect(trackSelect, [], "-- Fehler beim Laden --", null); });
             }
         }

@@ -11,6 +11,7 @@ namespace SimracingUtility.Controllers
     public class SetupController : Controller
     {
         private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB – Setup-Dateien sind klein
+        private const int MaxOverviewItems = 200;
 
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
@@ -29,8 +30,6 @@ namespace SimracingUtility.Controllers
         public async Task<IActionResult> Index(SimGame? sim, int? carId, int? trackId)
         {
             var query = _db.Setups
-                .Include(s => s.Car)
-                .Include(s => s.Track)
                 .AsNoTracking()
                 .AsQueryable();
 
@@ -38,10 +37,32 @@ namespace SimracingUtility.Controllers
             if (carId.HasValue) query = query.Where(s => s.CarId == carId.Value);
             if (trackId.HasValue) query = query.Where(s => s.TrackId == trackId.Value);
 
+            // Übersicht zeigt nur Metadaten – die (potenziell große) Setup-Datei
+            // FileData wird hier bewusst NICHT mitgeladen (erst beim Download).
             var setups = await query
                 .OrderByDescending(s => s.CreatedAt)
-                .Take(200)
+                .Take(MaxOverviewItems)
+                .Select(s => new Setup
+                {
+                    Id = s.Id,
+                    OwnerId = s.OwnerId,
+                    Sim = s.Sim,
+                    Name = s.Name,
+                    Description = s.Description,
+                    LapTime = s.LapTime,
+                    TrackTempCelsius = s.TrackTempCelsius,
+                    CreatorName = s.CreatorName,
+                    FileName = s.FileName,
+                    FileSize = s.FileSize,
+                    CreatedAt = s.CreatedAt,
+                    Car = s.Car == null ? null : new SimCar { Name = s.Car.Name },
+                    Track = s.Track == null ? null : new SimTrack { Name = s.Track.Name },
+                })
                 .ToListAsync();
+
+            // Hinweis, falls die Liste durch das Limit abgeschnitten wurde (#7).
+            ViewBag.OverviewCapped = setups.Count == MaxOverviewItems;
+            ViewBag.OverviewLimit = MaxOverviewItems;
 
             ViewBag.Sim = sim;
             ViewBag.CarId = carId;

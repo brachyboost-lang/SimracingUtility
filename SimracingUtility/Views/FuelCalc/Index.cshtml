@@ -218,7 +218,7 @@
                     var tbody = document.querySelector('table.table tbody');
                     if (tbody) {
                         var tr = document.createElement('tr');
-                        // columns: Track Name, Car Name, Car Class, Fuel Per Lap, Laptime, Event Duration (Minutes), Number of Pitstops, Number of Laps, Total Fuel Needed, Created At
+                        // columns: Track Name, Car Class, Car Name, Fuel Per Lap, Laptime, Event Duration (Minutes), Number of Pitstops, Number of Laps, Total Fuel Needed, Created At
                         var createdAtText = '';
                         if (data.createdAt) {
                             var dt = new Date(data.createdAt);
@@ -227,8 +227,8 @@
 
                         var cols = [
                             data.trackName,
-                            data.carName,
                             data.carClass,
+                            data.carName,
                             data.fuelPerLap,
                             data.timePerLap,
                             data.eventDurationMinutes,
