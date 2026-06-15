@@ -6,12 +6,13 @@ namespace SimracingUtility.Models
     public class LmuStatsPushDto
     {
         public string DriverName { get; set; } = string.Empty;
-        public LmuStatsDto Stats { get; set; } = new();
-        public List<LmuCompanionDto> Teammates { get; set; } = new();
-        public List<LmuCompanionDto> Opponents { get; set; } = new();
+        public CategoryStatsDto Sprint { get; set; } = new();
+        public CategoryStatsDto Endurance { get; set; } = new();
+        public List<TrackBestDto> BestLapsByTrack { get; set; } = new();
+        public List<RacedWithDto> MostRacedWith { get; set; } = new();
     }
 
-    public class LmuStatsDto
+    public class CategoryStatsDto
     {
         public int TotalRaces { get; set; }
         public int Wins { get; set; }
@@ -21,11 +22,16 @@ namespace SimracingUtility.Models
         public int TopHalf { get; set; }
         public int Dnf { get; set; }
         public int BestPosition { get; set; }
-        public double FastestLapTime { get; set; }
         public DateTime LastRaceDate { get; set; }
     }
 
-    public class LmuCompanionDto
+    public class TrackBestDto
+    {
+        public string Track { get; set; } = string.Empty;
+        public double BestLapTime { get; set; }
+    }
+
+    public class RacedWithDto
     {
         public string Name { get; set; } = string.Empty;
         public int RacesShared { get; set; }

@@ -16,14 +16,15 @@ namespace SimracingUtility.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // "Nur die Statistiken des Users" – wir zeigen den zuletzt
-            // aktualisierten Fahrer (i. d. R. genau einen).
-            var stats = await _db.LmuDriverStats
-                .Include(s => s.Companions)
-                .OrderByDescending(s => s.UpdatedAt)
+            // "Nur die Statistiken des Users" – zuletzt aktualisierter Fahrer.
+            var driver = await _db.LmuDrivers
+                .Include(d => d.Categories)
+                .Include(d => d.TrackBests)
+                .Include(d => d.RacedWith)
+                .OrderByDescending(d => d.UpdatedAt)
                 .FirstOrDefaultAsync();
 
-            return View(stats);
+            return View(driver);
         }
     }
 }

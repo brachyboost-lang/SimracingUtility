@@ -22,7 +22,6 @@ namespace SimracingUtility.Controllers
         [HttpPost("stats")]
         public async Task<IActionResult> Push([FromBody] LmuStatsPushDto? dto)
         {
-            // API-Key-Prüfung (geteiltes Geheimnis aus der Konfiguration).
             var expectedKey = _config["Lmu:IngestApiKey"];
             if (!string.IsNullOrEmpty(expectedKey))
             {
@@ -38,56 +37,64 @@ namespace SimracingUtility.Controllers
                 return BadRequest("DriverName fehlt.");
             }
 
-            // Upsert pro Fahrername; Companions werden komplett ersetzt.
-            var entity = await _db.LmuDriverStats
-                .Include(s => s.Companions)
-                .FirstOrDefaultAsync(s => s.DriverName == dto.DriverName);
+            // Upsert pro Fahrername; alle Kind-Datensätze werden ersetzt.
+            var driver = await _db.LmuDrivers
+                .Include(d => d.Categories)
+                .Include(d => d.TrackBests)
+                .Include(d => d.RacedWith)
+                .FirstOrDefaultAsync(d => d.DriverName == dto.DriverName);
 
-            if (entity == null)
+            if (driver == null)
             {
-                entity = new LmuDriverStats { DriverName = dto.DriverName };
-                _db.LmuDriverStats.Add(entity);
+                driver = new LmuDriver { DriverName = dto.DriverName };
+                _db.LmuDrivers.Add(driver);
             }
             else
             {
-                _db.LmuCompanions.RemoveRange(entity.Companions);
-                entity.Companions.Clear();
+                _db.LmuCategoryStats.RemoveRange(driver.Categories);
+                _db.LmuTrackBests.RemoveRange(driver.TrackBests);
+                _db.LmuRacedWith.RemoveRange(driver.RacedWith);
+                driver.Categories.Clear();
+                driver.TrackBests.Clear();
+                driver.RacedWith.Clear();
             }
 
-            entity.TotalRaces = dto.Stats.TotalRaces;
-            entity.Wins = dto.Stats.Wins;
-            entity.Podiums = dto.Stats.Podiums;
-            entity.Top5 = dto.Stats.Top5;
-            entity.Top10 = dto.Stats.Top10;
-            entity.TopHalf = dto.Stats.TopHalf;
-            entity.Dnf = dto.Stats.Dnf;
-            entity.BestPosition = dto.Stats.BestPosition;
-            entity.FastestLapTime = dto.Stats.FastestLapTime;
-            // Npgsql speichert timestamptz als UTC – eingehenden Wert als UTC behandeln.
-            entity.LastRaceDate = DateTime.SpecifyKind(dto.Stats.LastRaceDate, DateTimeKind.Utc);
-            entity.UpdatedAt = DateTime.UtcNow;
+            driver.UpdatedAt = DateTime.UtcNow;
+            driver.Categories.Add(ToCategory("Sprint", dto.Sprint));
+            driver.Categories.Add(ToCategory("Endurance", dto.Endurance));
 
-            foreach (var t in dto.Teammates)
+            foreach (var t in dto.BestLapsByTrack)
             {
-                entity.Companions.Add(new LmuCompanion
-                {
-                    Name = t.Name,
-                    RacesShared = t.RacesShared,
-                    Kind = CompanionKind.Teammate
-                });
+                driver.TrackBests.Add(new LmuTrackBest { Track = t.Track, BestLapTime = t.BestLapTime });
             }
-            foreach (var o in dto.Opponents)
+            foreach (var r in dto.MostRacedWith)
             {
-                entity.Companions.Add(new LmuCompanion
-                {
-                    Name = o.Name,
-                    RacesShared = o.RacesShared,
-                    Kind = CompanionKind.Opponent
-                });
+                driver.RacedWith.Add(new LmuRacedWith { Name = r.Name, RacesShared = r.RacesShared });
             }
 
             await _db.SaveChangesAsync();
-            return Ok(new { driver = entity.DriverName, companions = entity.Companions.Count });
+            return Ok(new
+            {
+                driver = driver.DriverName,
+                tracks = driver.TrackBests.Count,
+                racedWith = driver.RacedWith.Count
+            });
         }
+
+        private static LmuCategoryStat ToCategory(string category, CategoryStatsDto s)
+            => new()
+            {
+                Category = category,
+                TotalRaces = s.TotalRaces,
+                Wins = s.Wins,
+                Podiums = s.Podiums,
+                Top5 = s.Top5,
+                Top10 = s.Top10,
+                TopHalf = s.TopHalf,
+                Dnf = s.Dnf,
+                BestPosition = s.BestPosition,
+                // Npgsql speichert timestamptz als UTC – eingehenden Wert als UTC behandeln.
+                LastRaceDate = DateTime.SpecifyKind(s.LastRaceDate, DateTimeKind.Utc),
+            };
     }
 }

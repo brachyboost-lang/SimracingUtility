@@ -16,8 +16,10 @@ namespace SimracingUtility.Data
         public DbSet<Setup> Setups { get; set; }
         public DbSet<SimCar> SimCars { get; set; }
         public DbSet<SimTrack> SimTracks { get; set; }
-        public DbSet<LmuDriverStats> LmuDriverStats { get; set; }
-        public DbSet<LmuCompanion> LmuCompanions { get; set; }
+        public DbSet<LmuDriver> LmuDrivers { get; set; }
+        public DbSet<LmuCategoryStat> LmuCategoryStats { get; set; }
+        public DbSet<LmuTrackBest> LmuTrackBests { get; set; }
+        public DbSet<LmuRacedWith> LmuRacedWith { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,24 +76,41 @@ namespace SimracingUtility.Data
                 b.HasIndex(x => x.OwnerId);
             });
 
-            // Vom LMU-Agent gepushte Statistiken.
-            modelBuilder.Entity<LmuDriverStats>(b =>
+            // Vom LMU-Agent gepushte Auswertung.
+            modelBuilder.Entity<LmuDriver>(b =>
             {
                 b.HasKey(x => x.Id);
                 b.Property(x => x.DriverName).IsRequired().HasMaxLength(150);
                 b.HasIndex(x => x.DriverName).IsUnique();
 
-                b.HasMany(x => x.Companions)
-                    .WithOne(c => c.DriverStats)
-                    .HasForeignKey(c => c.LmuDriverStatsId)
+                b.HasMany(x => x.Categories)
+                    .WithOne(c => c.Driver)
+                    .HasForeignKey(c => c.LmuDriverId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                b.HasMany(x => x.TrackBests)
+                    .WithOne(c => c.Driver)
+                    .HasForeignKey(c => c.LmuDriverId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                b.HasMany(x => x.RacedWith)
+                    .WithOne(c => c.Driver)
+                    .HasForeignKey(c => c.LmuDriverId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<LmuCompanion>(b =>
+            modelBuilder.Entity<LmuCategoryStat>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Category).IsRequired().HasMaxLength(20);
+            });
+            modelBuilder.Entity<LmuTrackBest>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Track).IsRequired().HasMaxLength(150);
+            });
+            modelBuilder.Entity<LmuRacedWith>(b =>
             {
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Name).IsRequired().HasMaxLength(150);
-                b.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20);
             });
         }
     }

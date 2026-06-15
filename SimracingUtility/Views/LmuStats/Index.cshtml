@@ -1,8 +1,43 @@
 @using SimracingUtility.Models
-@model LmuDriverStats
+@model LmuDriver
 @{
     ViewData["Title"] = "Meine LMU-Statistiken";
     string Lap(double s) => s > 0 ? TimeSpan.FromSeconds(s).ToString(@"m\:ss\.fff") : "–";
+
+    void RenderCategory(string title, LmuCategoryStat? c)
+    {
+        <div class="col-lg-6">
+            <h3 class="h5">@title</h3>
+            @if (c == null || c.TotalRaces == 0)
+            {
+                <p class="text-muted">Keine Rennen in dieser Kategorie.</p>
+            }
+            else
+            {
+                <div class="row row-cols-2 row-cols-md-4 g-2">
+                    @foreach (var (label, value) in new (string, string)[]
+                    {
+                        ("Rennen", c.TotalRaces.ToString()),
+                        ("Siege (P1)", c.Wins.ToString()),
+                        ("Podien", c.Podiums.ToString()),
+                        ("Top 5", c.Top5.ToString()),
+                        ("Top 10", c.Top10.ToString()),
+                        ("Top 50 %", c.TopHalf.ToString()),
+                        ("DNF", c.Dnf.ToString()),
+                        ("Beste Pos.", c.BestPosition > 0 ? c.BestPosition.ToString() : "–"),
+                    })
+                    {
+                        <div class="col">
+                            <div class="card h-100 text-center"><div class="card-body py-2">
+                                <div class="h4 mb-0">@value</div>
+                                <div class="text-muted small">@label</div>
+                            </div></div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
 }
 
 <h1 class="mb-3">Meine LMU-Statistiken</h1>
@@ -11,83 +46,58 @@
 {
     <div class="alert alert-info">
         Es wurden noch keine Daten empfangen. Starte den <strong>LMU-Agent</strong>
-        (mit gesetztem <code>Website:BaseUrl</code>), damit er deine Renndaten
-        überträgt. Den Agent gibt es unter
+        (mit gesetztem <code>Website:BaseUrl</code>) – Download unter
         <a asp-controller="Download" asp-action="Index">LMU-Agent</a>.
     </div>
 }
 else
 {
+    var sprint = Model.Categories.FirstOrDefault(c => c.Category == "Sprint");
+    var endurance = Model.Categories.FirstOrDefault(c => c.Category == "Endurance");
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 mb-0">@Model.DriverName</h2>
         <span class="text-muted small">Stand: @Model.UpdatedAt.ToLocalTime().ToString("g")</span>
     </div>
 
-    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-        @{
-            var kpis = new (string Label, string Value)[]
-            {
-                ("Rennen", Model.TotalRaces.ToString()),
-                ("Siege (P1)", Model.Wins.ToString()),
-                ("Podien", Model.Podiums.ToString()),
-                ("Top 5", Model.Top5.ToString()),
-                ("Top 10", Model.Top10.ToString()),
-                ("Top 50 %", Model.TopHalf.ToString()),
-                ("DNF", Model.Dnf.ToString()),
-                ("Beste Position", Model.BestPosition > 0 ? Model.BestPosition.ToString() : "–"),
-                ("Beste Runde", Lap(Model.FastestLapTime)),
-                ("Letztes Rennen", Model.LastRaceDate == DateTime.MinValue ? "–" : Model.LastRaceDate.ToLocalTime().ToString("yyyy-MM-dd")),
-            };
-        }
-        @foreach (var k in kpis)
-        {
-            <div class="col">
-                <div class="card h-100 text-center">
-                    <div class="card-body py-3">
-                        <div class="display-6">@k.Value</div>
-                        <div class="text-muted small">@k.Label</div>
-                    </div>
-                </div>
-            </div>
-        }
+    <div class="row g-4 mb-4">
+        @{ RenderCategory("Sprint (< 90 min)", sprint); RenderCategory("Endurance (≥ 90 min)", endurance); }
     </div>
 
     <div class="row g-4">
-        <div class="col-md-6">
-            <h3 class="h5">Am meisten mit (Teamkollegen)</h3>
-            @{ var mates = Model.Companions.Where(c => c.Kind == CompanionKind.Teammate).OrderByDescending(c => c.RacesShared).ToList(); }
-            @if (mates.Count == 0)
+        <div class="col-lg-7">
+            <h3 class="h5">Beste Runde je Strecke</h3>
+            @if (Model.TrackBests.Count == 0)
             {
-                <p class="text-muted">Keine Teamkollegen erfasst.</p>
+                <p class="text-muted">Keine Rundenzeiten erfasst.</p>
             }
             else
             {
-                <ul class="list-group">
-                    @foreach (var c in mates)
+                <table class="table table-sm table-striped">
+                    <thead><tr><th>Strecke</th><th class="text-end">Beste Runde</th></tr></thead>
+                    <tbody>
+                    @foreach (var t in Model.TrackBests.OrderBy(t => t.Track))
                     {
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>@c.Name</span>
-                            <span class="badge text-bg-primary rounded-pill">@c.RacesShared</span>
-                        </li>
+                        <tr><td>@t.Track</td><td class="text-end">@Lap(t.BestLapTime)</td></tr>
                     }
-                </ul>
+                    </tbody>
+                </table>
             }
         </div>
-        <div class="col-md-6">
-            <h3 class="h5">Am meisten gegen (Gegner)</h3>
-            @{ var opps = Model.Companions.Where(c => c.Kind == CompanionKind.Opponent).OrderByDescending(c => c.RacesShared).ToList(); }
-            @if (opps.Count == 0)
+        <div class="col-lg-5">
+            <h3 class="h5">Am meisten gefahren mit</h3>
+            @if (Model.RacedWith.Count == 0)
             {
-                <p class="text-muted">Keine Gegner erfasst.</p>
+                <p class="text-muted">Keine Mitstreiter erfasst.</p>
             }
             else
             {
                 <ul class="list-group">
-                    @foreach (var c in opps)
+                    @foreach (var r in Model.RacedWith.OrderByDescending(r => r.RacesShared))
                     {
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>@c.Name</span>
-                            <span class="badge text-bg-secondary rounded-pill">@c.RacesShared</span>
+                            <span>@r.Name</span>
+                            <span class="badge text-bg-primary rounded-pill">@r.RacesShared</span>
                         </li>
                     }
                 </ul>
