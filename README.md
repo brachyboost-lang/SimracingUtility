@@ -1,5 +1,7 @@
 # SimracingUtility
 
+[![CI](https://github.com/brachyboost-lang/SimracingUtility/actions/workflows/ci.yml/badge.svg)](https://github.com/brachyboost-lang/SimracingUtility/actions/workflows/ci.yml)
+
 Eine ASP.NET-Core-Webanwendung für Sim-Racing mit zwei Kernbereichen:
 
 1. **Spritrechner (Fuel Calculator)** – berechnet für ein zeitbasiertes Rennen die
@@ -226,6 +228,29 @@ dotnet dotnet-ef migrations add <Name> --project SimracingUtility
 ```powershell
 dotnet test SimracingUtility.Tests/SimracingUtility.Tests/SimracingUtility.Tests.csproj
 ```
+
+## Continuous Integration (CI)
+
+**CI** bedeutet: Bei **jeder** Code-Änderung wird automatisch das gesamte Projekt
+gebaut und alle Tests ausgeführt – nicht erst manuell vor der Abgabe, sondern
+fortlaufend („continuous"). So fällt sofort auf, wenn ein Commit etwas kaputt
+macht, statt es erst Tage später zu bemerken.
+
+Hier übernimmt das **GitHub Actions** über den Workflow
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+- **Auslöser:** jeder Push auf `master` und jeder Pull Request.
+- **Umgebung:** ein frischer **Windows-Runner** (nötig, weil der LMU-Agent eine
+  WinForms-Tray-App auf `net10.0-windows` ist) mit automatisch installiertem
+  .NET-10-SDK.
+- **Schritte:** LMU-Agent bauen → Agent-Tests → Website bauen → Website-Tests.
+  Die Tests sind reine Unit-Tests und brauchen **kein PostgreSQL**.
+- **Ergebnis:** grün = alles baut und alle Tests bestehen; rot = sofort sichtbar
+  im GitHub-„Actions"-Tab und am **Status-Badge** oben in dieser README.
+
+Nutzen: reproduzierbarer Build auf einer sauberen Maschine (nicht „läuft nur bei
+mir"), automatische Qualitätssicherung bei jeder Änderung und ein sichtbarer
+Beleg, dass der Stand funktioniert.
 
 ## Hinweise
 

@@ -81,3 +81,7 @@ dotnet build SimracingUtility/SimracingUtility.csproj
 dotnet test  SimracingUtility.Tests/SimracingUtility.Tests/SimracingUtility.Tests.csproj
 ```
 Voraussetzung Website: erreichbare PostgreSQL-Instanz (Migrationen laufen beim Start).
+
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) baut + testet beide
+Projekte bei jedem Push auf `master` und jedem Pull Request (Windows-Runner,
+.NET 10). Lokal grün halten – ein roter CI-Lauf blockiert die Übergabe.
