@@ -27,10 +27,24 @@ public class EventParser : IEventParser
                 return new List<Event>();
             }
 
-            // Speichere die Events in der Datenbank
+            // Idempotentes Schreiben: Upsert anhand des natuerlichen Schluessels
+            // (Name + Date). So fuehrt wiederholtes Parsen derselben Datei nicht
+            // zu Duplikaten, sondern aktualisiert bestehende Eintraege.
             foreach (var eventItem in events)
             {
-                _context.Events.Add(eventItem);
+                var existing = await _context.Events
+                    .FirstOrDefaultAsync(e => e.Name == eventItem.Name && e.Date == eventItem.Date);
+
+                if (existing == null)
+                {
+                    _context.Events.Add(eventItem);
+                }
+                else
+                {
+                    existing.Location = eventItem.Location;
+                    existing.Description = eventItem.Description;
+                    existing.IsActive = eventItem.IsActive;
+                }
             }
             await _context.SaveChangesAsync();
 

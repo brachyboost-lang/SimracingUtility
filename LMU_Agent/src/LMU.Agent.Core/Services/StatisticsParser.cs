@@ -86,9 +86,28 @@ public class StatisticsParser : IStatisticsParser
     {
         var statisticsList = await CalculateStatisticsAsync();
 
+        // Idempotentes Schreiben: pro Fahrer existiert genau ein Statistik-Satz.
+        // Neu berechnete Werte aktualisieren den bestehenden Eintrag statt einen
+        // weiteren anzulegen (Upsert anhand des Fahrernamens).
         foreach (var stats in statisticsList)
         {
-            _context.Statistics.Add(stats);
+            var existing = await _context.Statistics
+                .FirstOrDefaultAsync(s => s.DriverName == stats.DriverName);
+
+            if (existing == null)
+            {
+                _context.Statistics.Add(stats);
+            }
+            else
+            {
+                existing.AverageTime = stats.AverageTime;
+                existing.BestPosition = stats.BestPosition;
+                existing.TotalRaces = stats.TotalRaces;
+                existing.Podiums = stats.Podiums;
+                existing.Wins = stats.Wins;
+                existing.FastestLapTime = stats.FastestLapTime;
+                existing.LastRaceDate = stats.LastRaceDate;
+            }
         }
 
         await _context.SaveChangesAsync();

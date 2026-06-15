@@ -27,10 +27,21 @@ public class RaceResultParser : IRaceResultParser
                 return new List<RaceResult>();
             }
 
-            // Speichere die Ergebnisse in der Datenbank
+            // Idempotentes Schreiben: Ein Renn-Ergebnis ist ein historischer,
+            // unveraenderlicher Datensatz. Wir fuegen es nur ein, wenn es noch
+            // nicht existiert (natuerlicher Schluessel: Fahrer + Renndatum +
+            // Position). So legt wiederholtes Parsen keine Duplikate an.
             foreach (var result in results)
             {
-                _context.RaceResults.Add(result);
+                var exists = await _context.RaceResults.AnyAsync(r =>
+                    r.DriverName == result.DriverName &&
+                    r.RaceDate == result.RaceDate &&
+                    r.Position == result.Position);
+
+                if (!exists)
+                {
+                    _context.RaceResults.Add(result);
+                }
             }
             await _context.SaveChangesAsync();
 

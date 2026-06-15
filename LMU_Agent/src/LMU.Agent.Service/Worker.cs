@@ -13,6 +13,10 @@ namespace LMU.Agent.Service;
 /// </summary>
 public class Worker : BackgroundService
 {
+    // Intervall zwischen zwei Erfassungsläufen. Da die Parser idempotent
+    // schreiben (Upsert), ist wiederholtes Einlesen gefahrlos möglich.
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(5);
+
     private readonly IServiceProvider _services;
     private readonly ILogger<Worker> _logger;
 
@@ -23,6 +27,31 @@ public class Worker : BackgroundService
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        // Datenbank einmalig sicherstellen
+        using (var scope = _services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<LMUAgentContext>();
+            await context.Database.EnsureCreatedAsync(stoppingToken);
+        }
+
+        // Periodisch neu einlesen, bis der Dienst gestoppt wird.
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await RunCaptureAsync(stoppingToken);
+
+            try
+            {
+                await Task.Delay(PollInterval, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break; // normaler Shutdown
+            }
+        }
+    }
+
+    private async Task RunCaptureAsync(CancellationToken stoppingToken)
     {
         // Pfad zu den LMU-Ultimate-Datenordnern konfigurieren
         var lmDataPath = Environment.GetEnvironmentVariable("LMU_DATA_PATH") ??
@@ -37,14 +66,10 @@ public class Worker : BackgroundService
         try
         {
             using var scope = _services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<LMUAgentContext>();
             var eventParser = scope.ServiceProvider.GetRequiredService<IEventParser>();
             var resultParser = scope.ServiceProvider.GetRequiredService<IRaceResultParser>();
             var profileParser = scope.ServiceProvider.GetRequiredService<IDriverProfileParser>();
             var statisticsParser = scope.ServiceProvider.GetRequiredService<IStatisticsParser>();
-
-            // Datenbank sicherstellen
-            await context.Database.EnsureCreatedAsync(stoppingToken);
 
             _logger.LogInformation("Lese Events von {Path}", eventsPath);
             var events = await eventParser.ParseEventsAsync(eventsPath);
@@ -61,23 +86,11 @@ public class Worker : BackgroundService
             _logger.LogInformation("Berechne Statistiken...");
             await statisticsParser.CalculateAndStoreStatisticsAsync();
 
-            _logger.LogInformation("LMU Agent: Initiale Datenerfassung abgeschlossen.");
+            _logger.LogInformation("LMU Agent: Datenerfassung abgeschlossen.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Fehler bei der Datenerfassung des LMU Agent.");
-        }
-
-        // Dienst am Leben halten, bis er gestoppt wird.
-        // TODO: Periodisches Neu-Einlesen mit idempotentem Upsert (aktuell würden
-        //       die Parser bei jedem Lauf Duplikate anlegen).
-        try
-        {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // normaler Shutdown
         }
     }
 }

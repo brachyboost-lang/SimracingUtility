@@ -27,10 +27,28 @@ public class DriverProfileParser : IDriverProfileParser
                 return new List<DriverProfile>();
             }
 
-            // Speichere die Profile in der Datenbank
+            // Idempotentes Schreiben: Upsert anhand des Fahrernamens (natuerlicher
+            // Schluessel). Wiederholtes Parsen aktualisiert das Profil statt es
+            // doppelt anzulegen.
             foreach (var profile in profiles)
             {
-                _context.DriverProfiles.Add(profile);
+                var existing = await _context.DriverProfiles
+                    .FirstOrDefaultAsync(p => p.Name == profile.Name);
+
+                if (existing == null)
+                {
+                    _context.DriverProfiles.Add(profile);
+                }
+                else
+                {
+                    existing.Team = profile.Team;
+                    existing.CarModel = profile.CarModel;
+                    existing.Class = profile.Class;
+                    existing.TotalRaces = profile.TotalRaces;
+                    existing.Podiums = profile.Podiums;
+                    existing.Wins = profile.Wins;
+                    existing.AveragePosition = profile.AveragePosition;
+                }
             }
             await _context.SaveChangesAsync();
 
