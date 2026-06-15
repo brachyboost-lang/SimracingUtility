@@ -12,12 +12,17 @@ public class LMUAgentContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        // Konfiguration für SQLite (lokale Datei-Datenbank)
-        var connectionString = "Data Source=lmu_agent.db";
-        
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlite(connectionString);
+            // Fester, gemeinsamer Speicherort, damit Dienst und Web-API unabhängig
+            // vom Arbeitsverzeichnis dieselbe Datenbank verwenden.
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "LMUAgent");
+            Directory.CreateDirectory(dir);
+            var dbPath = Path.Combine(dir, "lmu_agent.db");
+
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
     }
 
@@ -34,8 +39,8 @@ public class LMUAgentContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DriverName).IsRequired();
-            entity.Property(e => e.Time).IsRequired();
             entity.Property(e => e.Position).IsRequired();
+            entity.Ignore(e => e.IsDnf); // berechnete Eigenschaft, keine Spalte
         });
 
         modelBuilder.Entity<DriverProfile>(entity =>

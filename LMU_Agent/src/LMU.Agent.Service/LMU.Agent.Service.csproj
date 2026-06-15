@@ -19,4 +19,8 @@
     <ProjectReference Include="..\LMU.Agent.Core\LMU.Agent.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,7 @@
 using LMU.Agent.Core.Data;
 using LMU.Agent.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,37 +9,37 @@ using Microsoft.Extensions.Logging;
 namespace LMU.Agent.Service;
 
 /// <summary>
-/// Hintergrunddienst, der beim Start die LMU-Datendateien einliest, in die
-/// SQLite-Datenbank schreibt und die Fahrer-Statistiken berechnet.
+/// Hintergrunddienst, der periodisch die LMU-Ergebnisdateien einliest, in die
+/// SQLite-Datenbank schreibt und die Fahrer-Statistiken aktualisiert.
 /// </summary>
 public class Worker : BackgroundService
 {
-    // Intervall zwischen zwei Erfassungsläufen. Da die Parser idempotent
-    // schreiben (Upsert), ist wiederholtes Einlesen gefahrlos möglich.
+    // Da die Parser idempotent schreiben (Upsert), ist wiederholtes Einlesen
+    // gefahrlos möglich.
     private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(5);
 
     private readonly IServiceProvider _services;
+    private readonly IConfiguration _config;
     private readonly ILogger<Worker> _logger;
 
-    public Worker(IServiceProvider services, ILogger<Worker> logger)
+    public Worker(IServiceProvider services, IConfiguration config, ILogger<Worker> logger)
     {
         _services = services;
+        _config = config;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Datenbank einmalig sicherstellen
         using (var scope = _services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<LMUAgentContext>();
             await context.Database.EnsureCreatedAsync(stoppingToken);
         }
 
-        // Periodisch neu einlesen, bis der Dienst gestoppt wird.
         while (!stoppingToken.IsCancellationRequested)
         {
-            await RunCaptureAsync(stoppingToken);
+            await RunCaptureAsync();
 
             try
             {
@@ -51,37 +52,30 @@ public class Worker : BackgroundService
         }
     }
 
-    private async Task RunCaptureAsync(CancellationToken stoppingToken)
+    private async Task RunCaptureAsync()
     {
-        // Pfad zu den LMU-Ultimate-Datenordnern konfigurieren
-        var lmDataPath = Environment.GetEnvironmentVariable("LMU_DATA_PATH") ??
-                         Path.Combine(
-                             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                             "AppData", "LocalLow", "SlightlyMad", "LeMansUltimate");
+        var resultsPath = LmuPathResolver.ResolveResultsPath(_config["Lmu:ResultsPath"]);
 
-        var eventsPath = Path.Combine(lmDataPath, "Events.json");
-        var resultsPath = Path.Combine(lmDataPath, "RaceResults.json");
-        var profilesPath = Path.Combine(lmDataPath, "DriverProfiles.json");
+        if (!Directory.Exists(resultsPath))
+        {
+            _logger.LogWarning(
+                "LMU-Ergebnisordner nicht gefunden: {Path}. Bitte den Pfad in " +
+                "appsettings.json (Lmu:ResultsPath) oder über die Umgebungsvariable " +
+                "{EnvVar} setzen – er zeigt typischerweise auf " +
+                "<Steam>\\steamapps\\common\\Le Mans Ultimate\\UserData\\Log\\Results.",
+                resultsPath, LmuPathResolver.EnvVariable);
+            return;
+        }
 
         try
         {
             using var scope = _services.CreateScope();
-            var eventParser = scope.ServiceProvider.GetRequiredService<IEventParser>();
             var resultParser = scope.ServiceProvider.GetRequiredService<IRaceResultParser>();
-            var profileParser = scope.ServiceProvider.GetRequiredService<IDriverProfileParser>();
             var statisticsParser = scope.ServiceProvider.GetRequiredService<IStatisticsParser>();
 
-            _logger.LogInformation("Lese Events von {Path}", eventsPath);
-            var events = await eventParser.ParseEventsAsync(eventsPath);
-            _logger.LogInformation("Geparsete Events: {Count}", events.Count);
-
-            _logger.LogInformation("Lese Race Results von {Path}", resultsPath);
+            _logger.LogInformation("Lese Rennergebnisse aus {Path}", resultsPath);
             var results = await resultParser.ParseRaceResultsAsync(resultsPath);
-            _logger.LogInformation("Geparsete Race Results: {Count}", results.Count);
-
-            _logger.LogInformation("Lese Driver Profiles von {Path}", profilesPath);
-            var profiles = await profileParser.ParseProfilesAsync(profilesPath);
-            _logger.LogInformation("Geparsete Driver Profiles: {Count}", profiles.Count);
+            _logger.LogInformation("Geparste Ergebnis-Datensätze: {Count}", results.Count);
 
             _logger.LogInformation("Berechne Statistiken...");
             await statisticsParser.CalculateAndStoreStatisticsAsync();

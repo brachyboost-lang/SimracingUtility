@@ -1,4 +1,3 @@
-using System.Linq;
 using LMU.Agent.Core.Models;
 using LMU.Agent.Core.Data;
 using Microsoft.EntityFrameworkCore;
@@ -16,79 +15,63 @@ public class StatisticsParser : IStatisticsParser
 
     public async Task<List<Statistics>> CalculateStatisticsAsync()
     {
-        var driverNames = await _context.DriverProfiles
-            .Select(d => d.Name)
-            .Distinct()
-            .ToListAsync();
+        // Fahrer werden aus den tatsächlichen Rennergebnissen abgeleitet – so
+        // funktioniert die Statistik unabhängig von einer Profil-Datei.
+        var allResults = await _context.RaceResults.ToListAsync();
 
-        var statisticsList = new List<Statistics>();
-
-        foreach (var driverName in driverNames)
-        {
-            var stats = await CalculateDriverStatisticsAsync(driverName);
-            statisticsList.Add(stats);
-        }
-
-        return statisticsList;
+        return allResults
+            .GroupBy(r => r.DriverName)
+            .Select(g => ComputeStatistics(g.Key, g.ToList()))
+            .OrderByDescending(s => s.Wins)
+            .ThenByDescending(s => s.Podiums)
+            .ToList();
     }
 
-    private async Task<Statistics> CalculateDriverStatisticsAsync(string driverName)
+    /// <summary>
+    /// Berechnet die Kennzahlen eines Fahrers aus seinen Rennergebnissen.
+    /// Positionsbasierte Zähler (Sieg/Podium/Top-N) zählen nur regulär beendete
+    /// Rennen; DNFs werden separat gezählt.
+    /// </summary>
+    public static Statistics ComputeStatistics(string driverName, List<RaceResult> results)
     {
-        var driverResults = await _context.RaceResults
-            .Where(r => r.DriverName == driverName)
-            .ToListAsync();
-
-        if (!driverResults.Any())
-        {
-            return new Statistics
-            {
-                DriverName = driverName,
-                AverageTime = 0,
-                BestPosition = int.MaxValue,
-                TotalRaces = 0,
-                Podiums = 0,
-                Wins = 0,
-                FastestLapTime = double.MaxValue,
-                LastRaceDate = DateTime.MinValue
-            };
-        }
-
-        var totalTime = driverResults.Sum(r => r.Time);
-        var bestPosition = driverResults.Min(r => r.Position);
-        var podiums = driverResults.Count(r => r.Position <= 3);
-        var wins = driverResults.Count(r => r.Position == 1);
-        var allLapTimes = driverResults.SelectMany(r => r.LapTimes).Select(l => l.Time).ToList();
-        var fastestLapTime = allLapTimes.Any() ? allLapTimes.Min() : double.MaxValue;
-        var lastRaceDate = driverResults.Max(r => r.RaceDate);
+        var finished = results.Where(r => !r.IsDnf && r.Position > 0).ToList();
+        var validLaps = results.Where(r => r.BestLapTime > 0).Select(r => r.BestLapTime).ToList();
 
         return new Statistics
         {
             DriverName = driverName,
-            AverageTime = totalTime / driverResults.Count,
-            BestPosition = bestPosition,
-            TotalRaces = driverResults.Count,
-            Podiums = podiums,
-            Wins = wins,
-            FastestLapTime = fastestLapTime,
-            LastRaceDate = lastRaceDate
+            TotalRaces = results.Count,
+            Wins = finished.Count(r => r.Position == 1),
+            Podiums = finished.Count(r => r.Position <= 3),
+            Top5 = finished.Count(r => r.Position <= 5),
+            Top10 = finished.Count(r => r.Position <= 10),
+            TopHalf = finished.Count(IsInTopHalf),
+            Dnf = results.Count(r => r.IsDnf),
+            BestPosition = finished.Count > 0 ? finished.Min(r => r.Position) : 0,
+            FastestLapTime = validLaps.Count > 0 ? validLaps.Min() : 0d,
+            LastRaceDate = results.Count > 0 ? results.Max(r => r.RaceDate) : DateTime.MinValue,
         };
+    }
+
+    private static bool IsInTopHalf(RaceResult r)
+    {
+        if (r.FieldSize <= 0) return false;
+        var half = (int)Math.Ceiling(r.FieldSize / 2.0);
+        return r.Position <= half;
     }
 
     public async Task<Statistics?> GetStatisticsByDriverNameAsync(string driverName)
     {
-        var stats = await _context.Statistics
+        return await _context.Statistics
             .FirstOrDefaultAsync(s => s.DriverName == driverName);
-
-        return stats;
     }
 
     public async Task<Statistics?> CalculateAndStoreStatisticsAsync()
     {
         var statisticsList = await CalculateStatisticsAsync();
 
-        // Idempotentes Schreiben: pro Fahrer existiert genau ein Statistik-Satz.
-        // Neu berechnete Werte aktualisieren den bestehenden Eintrag statt einen
-        // weiteren anzulegen (Upsert anhand des Fahrernamens).
+        // Idempotentes Schreiben: ein Statistik-Satz pro Fahrer wird aktualisiert
+        // statt dupliziert (Upsert anhand des Fahrernamens).
         foreach (var stats in statisticsList)
         {
             var existing = await _context.Statistics
@@ -100,11 +83,14 @@ public class StatisticsParser : IStatisticsParser
             }
             else
             {
-                existing.AverageTime = stats.AverageTime;
-                existing.BestPosition = stats.BestPosition;
                 existing.TotalRaces = stats.TotalRaces;
-                existing.Podiums = stats.Podiums;
                 existing.Wins = stats.Wins;
+                existing.Podiums = stats.Podiums;
+                existing.Top5 = stats.Top5;
+                existing.Top10 = stats.Top10;
+                existing.TopHalf = stats.TopHalf;
+                existing.Dnf = stats.Dnf;
+                existing.BestPosition = stats.BestPosition;
                 existing.FastestLapTime = stats.FastestLapTime;
                 existing.LastRaceDate = stats.LastRaceDate;
             }
