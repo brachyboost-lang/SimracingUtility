@@ -142,6 +142,10 @@ public class RaceResultParser : IRaceResultParser
         // Session-Kennung: Unix-Zeitstempel der Session (eindeutig je Rennen).
         var sessionId = !string.IsNullOrWhiteSpace(unix) ? unix : (timeString?.Trim() ?? string.Empty);
 
+        // Geplante Renndauer (für die Endurance-Einstufung).
+        var raceMinutes = ParseInt((raceResults.Descendants("Minutes").FirstOrDefault()
+                                    ?? raceResults.Descendants("RaceTime").FirstOrDefault())?.Value);
+
         // Nur die Renn-Session auswerten (nicht Practice/Qualify).
         var race = raceResults.Descendants("Race").FirstOrDefault();
         if (race == null)
@@ -166,6 +170,7 @@ public class RaceResultParser : IRaceResultParser
                 SessionId = sessionId,
                 RaceDate = raceDate,
                 TrackName = trackName,
+                RaceMinutes = raceMinutes,
                 TeamName = driver.Element("TeamName")?.Value?.Trim() ?? string.Empty,
                 CarEntry = driver.Element("VehFile")?.Value?.Trim() ?? string.Empty,
                 Position = ParseInt(driver.Element("ClassPosition")?.Value),

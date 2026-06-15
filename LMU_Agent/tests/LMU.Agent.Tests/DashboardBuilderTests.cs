@@ -5,112 +5,103 @@ namespace LMU.Agent.Tests;
 
 public class DashboardBuilderTests
 {
-    private static RaceResult R(string driver, string session, string team, bool isPlayer = true)
+    private static RaceResult R(string driver, string session, int pos = 1, int field = 10,
+        bool human = true, int minutes = 20, string track = "Monza", double lap = 0)
         => new()
         {
             DriverName = driver,
             SessionId = session,
-            TeamName = team,        // wird zu CarKey
-            Position = 1,
-            FieldSize = 1,
+            Position = pos,
+            FieldSize = field,
+            IsPlayer = human,
+            RaceMinutes = minutes,
+            TrackName = track,
+            BestLapTime = lap,
             FinishStatus = "None",
             RaceDate = new DateTime(2026, 1, 1),
-            IsPlayer = isPlayer,
         };
 
-    // Alice ist in 3 Rennen (am meisten -> Besitzer). Bob ist mal Teamkollege,
-    // mal Gegner; Dave Teamkollege; Carol Gegner.
-    private static List<RaceResult> Sample() => new()
-    {
-        R("Alice", "s1", "TeamA"), R("Bob", "s1", "TeamA"), R("Carol", "s1", "TeamB"),
-        R("Alice", "s2", "TeamA"), R("Bob", "s2", "TeamB"), R("Dave", "s2", "TeamA"),
-        R("Alice", "s3", "TeamA"),
-    };
-
     [Fact]
-    public void Build_IdentifiesOwnerAsDriverWithMostResults()
-    {
-        var d = DashboardBuilder.Build(Sample());
-        Assert.Equal("Alice", d.DriverName);
-        Assert.Equal(3, d.Stats.TotalRaces);
-    }
-
-    [Fact]
-    public void Build_CountsTeammatesBySharedCar()
-    {
-        var d = DashboardBuilder.Build(Sample());
-
-        // Bob (s1) und Dave (s2) teilten Alices Auto.
-        Assert.Equal(1, d.Teammates.Single(c => c.Name == "Bob").RacesShared);
-        Assert.Equal(1, d.Teammates.Single(c => c.Name == "Dave").RacesShared);
-        Assert.DoesNotContain(d.Teammates, c => c.Name == "Carol");
-    }
-
-    [Fact]
-    public void Build_CountsOpponentsByDifferentCar()
-    {
-        var d = DashboardBuilder.Build(Sample());
-
-        // Carol (s1) und Bob (s2) fuhren in anderen Autos.
-        Assert.Equal(1, d.Opponents.Single(c => c.Name == "Carol").RacesShared);
-        Assert.Equal(1, d.Opponents.Single(c => c.Name == "Bob").RacesShared);
-    }
-
-    [Fact]
-    public void Build_ExcludesBotsFromCompanions()
+    public void Build_IgnoresAiSessionsEntirely()
     {
         var rows = new List<RaceResult>
         {
-            R("Alice", "s1", "TeamA"),                       // ich (Mensch)
-            R("HumanMate", "s1", "TeamA"),                   // menschlicher Teamkollege
-            R("BotMate", "s1", "TeamA", isPlayer: false),    // KI im selben Auto
-            R("HumanRival", "s1", "TeamB"),                  // menschlicher Gegner
-            R("BotRival", "s1", "TeamC", isPlayer: false),   // KI-Gegner
-            R("Alice", "s2", "TeamA"),                       // damit Alice die meisten hat
+            R("Me", "s1"), R("R1", "s1"), R("R2", "s1"),
+            R("Me", "s2"), R("R1", "s2"),
+            R("Me", "s4"), R("R2", "s4"),
+            // s3 ist ein KI-Rennen (enthält einen Bot) -> komplett ignorieren
+            R("Me", "s3"), R("R3", "s3"), R("Bot", "s3", human: false),
         };
 
         var d = DashboardBuilder.Build(rows);
 
-        Assert.Equal("Alice", d.DriverName);
-        Assert.Contains(d.Teammates, c => c.Name == "HumanMate");
-        Assert.Contains(d.Opponents, c => c.Name == "HumanRival");
-        Assert.DoesNotContain(d.Teammates, c => c.Name == "BotMate");
-        Assert.DoesNotContain(d.Opponents, c => c.Name == "BotRival");
-    }
-
-    [Fact]
-    public void Build_NoHumans_ReturnsEmptyDashboard()
-    {
-        var rows = new List<RaceResult>
-        {
-            R("Bot1", "s1", "T1", isPlayer: false),
-            R("Bot2", "s1", "T2", isPlayer: false),
-        };
-        var d = DashboardBuilder.Build(rows);
-        Assert.Equal(string.Empty, d.DriverName);
-    }
-
-    [Fact]
-    public void Build_EmptyInput_ReturnsEmptyDashboard()
-    {
-        var d = DashboardBuilder.Build(new List<RaceResult>());
-        Assert.Equal(string.Empty, d.DriverName);
-        Assert.Empty(d.Teammates);
-        Assert.Empty(d.Opponents);
-    }
-
-    [Fact]
-    public void Build_RespectsTopNLimit()
-    {
-        var rows = new List<RaceResult> { R("Me", "s1", "T0") };
-        // 5 Gegner in derselben Session, aber topN = 3.
-        for (int i = 0; i < 5; i++)
-            rows.Add(R($"Opp{i}", "s1", $"Other{i}"));
-        // "Me" muss die meisten Ergebnisse haben:
-        rows.Add(R("Me", "s2", "T0"));
-
-        var d = DashboardBuilder.Build(rows, topN: 3);
         Assert.Equal("Me", d.DriverName);
-        Assert.Equal(3, d.Opponents.Count);
+        Assert.Equal(3, d.Sprint.TotalRaces);                         // s1,s2,s4 (nicht s3)
+        Assert.DoesNotContain(d.MostRacedWith, c => c.Name == "R3");  // nur im KI-Rennen
+        Assert.DoesNotContain(d.MostRacedWith, c => c.Name == "Bot");
+    }
+
+    [Fact]
+    public void Build_MostRacedWith_CountsSharedSessions()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("R1", "s1"), R("R2", "s1"),
+            R("Me", "s2"), R("R1", "s2"),
+            R("Me", "s4"), R("R2", "s4"),
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Equal(2, d.MostRacedWith.Single(c => c.Name == "R1").RacesShared); // s1,s2
+        Assert.Equal(2, d.MostRacedWith.Single(c => c.Name == "R2").RacesShared); // s1,s4
+    }
+
+    [Fact]
+    public void Build_SplitsSprintAndEndurance()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1", pos: 1, minutes: 20),    // Sprint, Sieg
+            R("R1", "s1", pos: 2, minutes: 20),
+            R("Me", "s2", pos: 2, minutes: 240),   // Endurance, Podium
+            R("R1", "s2", pos: 1, minutes: 240),
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Equal(1, d.Sprint.TotalRaces);
+        Assert.Equal(1, d.Sprint.Wins);
+        Assert.Equal(1, d.Endurance.TotalRaces);
+        Assert.Equal(0, d.Endurance.Wins);
+        Assert.Equal(1, d.Endurance.Podiums);
+    }
+
+    [Fact]
+    public void Build_BestLapsByTrack_PicksMinPerTrack()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1", track: "Monza", lap: 100.0),
+            R("R1", "s1", track: "Monza", lap: 95.0),   // anderer Fahrer zählt nicht
+            R("Me", "s2", track: "Monza", lap: 98.0),
+            R("Me", "s3", track: "Spa",   lap: 120.0),
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Equal(98.0, d.BestLapsByTrack.Single(t => t.Track == "Monza").BestLapTime, 3);
+        Assert.Equal(120.0, d.BestLapsByTrack.Single(t => t.Track == "Spa").BestLapTime, 3);
+    }
+
+    [Fact]
+    public void Build_OnlyAiSessions_ReturnsEmpty()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("Bot", "s1", human: false),
+        };
+        var d = DashboardBuilder.Build(rows);
+        Assert.Equal(string.Empty, d.DriverName);
     }
 }

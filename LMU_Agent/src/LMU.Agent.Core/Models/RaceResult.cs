@@ -13,6 +13,12 @@ public class RaceResult
 
     public string TrackName { get; set; } = string.Empty;
 
+    /// <summary>Geplante Renndauer in Minuten (aus &lt;Minutes&gt;); 0 bei reinen Rundenrennen.</summary>
+    public int RaceMinutes { get; set; }
+
+    /// <summary>Endurance ab 90 Minuten Renndauer.</summary>
+    public bool IsEndurance => RaceMinutes >= 90;
+
     /// <summary>Team-/Einsatzname des Autos – Fahrer mit gleichem Wert im selben
     /// Rennen sind Teamkollegen (Fahrerwechsel in der Endurance).</summary>
     public string TeamName { get; set; } = string.Empty;
