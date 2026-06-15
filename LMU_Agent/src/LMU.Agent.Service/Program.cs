@@ -21,6 +21,9 @@ builder.Services.AddScoped<IRaceResultParser, RaceResultParser>();
 builder.Services.AddScoped<IDriverProfileParser, DriverProfileParser>();
 builder.Services.AddScoped<IStatisticsParser, StatisticsParser>();
 
+// HTTP-Client für den Stats-Push an die Website.
+builder.Services.AddHttpClient<StatsPushClient>();
+
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

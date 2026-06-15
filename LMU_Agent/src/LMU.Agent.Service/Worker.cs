@@ -70,8 +70,10 @@ public class Worker : BackgroundService
         try
         {
             using var scope = _services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<LMUAgentContext>();
             var resultParser = scope.ServiceProvider.GetRequiredService<IRaceResultParser>();
             var statisticsParser = scope.ServiceProvider.GetRequiredService<IStatisticsParser>();
+            var pushClient = scope.ServiceProvider.GetRequiredService<StatsPushClient>();
 
             _logger.LogInformation("Lese Rennergebnisse aus {Path}", resultsPath);
             var results = await resultParser.ParseRaceResultsAsync(resultsPath);
@@ -79,6 +81,11 @@ public class Worker : BackgroundService
 
             _logger.LogInformation("Berechne Statistiken...");
             await statisticsParser.CalculateAndStoreStatisticsAsync();
+
+            // Nutzer-Dashboard bauen und an die Website pushen.
+            var all = await context.RaceResults.ToListAsync();
+            var dashboard = DashboardBuilder.Build(all);
+            await pushClient.PushAsync(dashboard, CancellationToken.None);
 
             _logger.LogInformation("LMU Agent: Datenerfassung abgeschlossen.");
         }
