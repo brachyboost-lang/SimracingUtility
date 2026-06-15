@@ -139,9 +139,14 @@ Ergebnissen). Wichtige Regeln aus dem Abgleich mit echten Dateien:
   im selben Rennen war. Echte *Teamkollegen* (Fahrerwechsel) sind nicht ableitbar –
   die Ergebnisse listen genau einen Fahrer pro Auto, und `TeamName` ist keine
   eindeutige Auto-Kennung.
-- **Häufigste gegnerische custom Teams**: Standard-/Default-Liverys (ein
-  `TeamName`, den in einem Rennen mehrere Fahrer nutzen) werden herausgefiltert,
-  sodass nur echte Team-Namen übrig bleiben.
+- **Häufigste gegnerische custom Teams**: Standard-/Default-Liverys werden über
+  mehrere sichere Signale erkannt und herausgefiltert – ein `TeamName`, der (a)
+  von einem KI-Bot gefahren wird, (b) dem Saison-Muster „Jahr + #Startnummer"
+  entspricht (z. B. „Akkodis ASP Team 2025 #87"), (c) im selben Rennen von
+  mehreren Fahrern genutzt wird oder (d) insgesamt von ≥ 8 Fahrern. Zusätzlich
+  zählen nur **echte Teams** (von ≥ 2 verschiedenen Fahrern genutzt), und Namen,
+  die bereits unter „Am meisten gefahren mit" stehen, werden nicht doppelt
+  gezeigt.
 
 ### Idempotentes Schreiben
 
