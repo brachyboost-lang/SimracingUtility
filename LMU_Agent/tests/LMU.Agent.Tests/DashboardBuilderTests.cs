@@ -100,16 +100,14 @@ public class DashboardBuilderTests
     {
         var rows = new List<RaceResult>
         {
-            // s1: Standard-Livery "Default GT3" von zwei Fahrern -> wird gefiltert
             R("Me", "s1", team: "MyTeam"),
-            R("R1", "s1", team: "Custom A"),
-            R("R2", "s1", team: "Default GT3"),
-            R("R3", "s1", team: "Default GT3"),
-            // s2: Custom A erneut -> 2 gemeinsame Sessions
             R("Me", "s2", team: "MyTeam"),
-            R("R1", "s2", team: "Custom A"),
-            // s4 nur damit "Me" die meisten Ergebnisse hat
             R("Me", "s4", team: "MyTeam"),
+            R("Helper", "s1", team: "MyTeam"),     // MyTeam hätte 2 Fahrer, ist aber eigenes Team
+            R("R1", "s1", team: "Custom A"),
+            R("R4", "s2", team: "Custom A"),        // Custom A: 2 Fahrer -> echtes Team
+            R("R2", "s1", team: "Default GT3"),
+            R("R3", "s1", team: "Default GT3"),     // in s1 von 2 Fahrern -> Stock
         };
 
         var d = DashboardBuilder.Build(rows);
@@ -118,6 +116,53 @@ public class DashboardBuilderTests
         Assert.Equal(2, d.MostRacedAgainstTeams.Single(t => t.Name == "Custom A").RacesShared);
         Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "Default GT3"); // Standard
         Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "MyTeam");      // eigenes Team
+    }
+
+    [Fact]
+    public void Build_SingleDriverTeam_NotCountedAsTeam()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("Me", "s2"), R("Me", "s3"),
+            R("Solo", "s1", team: "Solos Garage"),   // nur 1 Fahrer -> kein echtes Team
+        };
+
+        var d = DashboardBuilder.Build(rows);
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "Solos Garage");
+    }
+
+    [Fact]
+    public void Build_StockLivery_DetectedByYearAndNumberPattern()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("Me", "s2"), R("Me", "s3"),
+            R("R1", "s1", team: "Akkodis ASP Team 2025 #87"),  // Stock-Muster
+            R("R2", "s1", team: "Cool Custom Crew"),
+            R("R5", "s2", team: "Cool Custom Crew"),           // 2 Fahrer -> echtes Team
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Contains(d.MostRacedAgainstTeams, t => t.Name == "Cool Custom Crew");
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "Akkodis ASP Team 2025 #87");
+    }
+
+    [Fact]
+    public void Build_TeamNameAlreadyAmongRacedWith_IsRemovedFromTeams()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("Me", "s2"), R("Me", "s3"),
+            R("Bob", "s1"), R("Bob", "s2"),          // Bob -> Mitstreiter
+            R("Carl", "s1", team: "Bob"),            // Team zufällig "Bob" ...
+            R("Dave", "s2", team: "Bob"),            // ... von 2 Fahrern (echtes Team), aber Name = Mitstreiter
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Contains(d.MostRacedWith, c => c.Name == "Bob");
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "Bob"); // dedupliziert
     }
 
     [Fact]

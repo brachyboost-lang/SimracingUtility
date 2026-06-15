@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using LMU.Agent.Core.Models;
 
 namespace LMU.Agent.Core.Services;
@@ -48,7 +49,14 @@ public static class DashboardBuilder
         dashboard.Endurance = ComputeCategory(myResults.Where(r => r.IsEndurance));
         dashboard.BestLapsByTrack = BestLapsByTrack(myResults);
         dashboard.MostRacedWith = MostRacedWith(competitive, myResults, me, topN);
-        dashboard.MostRacedAgainstTeams = MostRacedAgainstTeams(all, competitive, myResults, me, topN);
+
+        // Namen, die schon als Mitstreiter gelistet sind, nicht zusätzlich als
+        // "gegnerisches Team" zeigen (Dedup-Wunsch).
+        var alreadyListed = dashboard.MostRacedWith
+            .Select(c => c.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        dashboard.MostRacedAgainstTeams =
+            MostRacedAgainstTeams(all, competitive, myResults, me, alreadyListed, topN);
         return dashboard;
     }
 
@@ -108,7 +116,7 @@ public static class DashboardBuilder
 
     private static List<CompanionCount> MostRacedAgainstTeams(
         IReadOnlyList<RaceResult> all, List<RaceResult> competitive,
-        List<RaceResult> myResults, string me, int topN)
+        List<RaceResult> myResults, string me, HashSet<string> exclude, int topN)
     {
         var standard = StandardLiveries(all);
         var myTeams = myResults
@@ -117,11 +125,23 @@ public static class DashboardBuilder
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var mySessions = myResults.Select(r => r.SessionId).ToHashSet();
 
+        // Ein echtes Team hat mehrere Mitglieder. Namen, die nur ein einziger
+        // Fahrer nutzt, sind faktisch Einzelpersonen (Teamname = eigener Name) und
+        // werden nicht als "Team" gezählt.
+        var multiDriverTeams = all
+            .Where(r => r.IsPlayer && !string.IsNullOrWhiteSpace(r.TeamName))
+            .GroupBy(r => r.TeamName, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Select(r => r.DriverName).Distinct().Count() >= 2)
+            .Select(g => g.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         return competitive
             .Where(r => r.DriverName != me && mySessions.Contains(r.SessionId))
             .Where(r => !string.IsNullOrWhiteSpace(r.TeamName)
-                        && !standard.Contains(r.TeamName)
-                        && !myTeams.Contains(r.TeamName))
+                        && multiDriverTeams.Contains(r.TeamName)  // echtes Team (≥2 Fahrer)
+                        && !standard.Contains(r.TeamName)   // Stock-Livery
+                        && !myTeams.Contains(r.TeamName)    // eigenes Team
+                        && !exclude.Contains(r.TeamName))   // schon als Mitstreiter gelistet
             .GroupBy(r => r.TeamName)
             .Select(g => new CompanionCount
             {
@@ -134,19 +154,50 @@ public static class DashboardBuilder
             .ToList();
     }
 
+    // Offizielle Saison-Livery: enthält ein Jahr (20xx) und eine #Startnummer,
+    // z. B. "Akkodis ASP Team 2025 #87", "Toyota Gazoo Racing 2025 #7".
+    private static readonly Regex StockLiveryPattern =
+        new(@"\b20\d{2}\b.*#\s*\d+", RegexOptions.Compiled);
+
     /// <summary>
-    /// Standard-/Default-Liverys: ein TeamName, der in irgendeinem Rennen von
-    /// mehreren verschiedenen Fahrern verwendet wird (kann also kein echtes Team
-    /// sein – jeder fährt sein eigenes Auto). Custom-Teamnamen sind je Rennen
-    /// eindeutig.
+    /// Erkennt Standard-/Default-Liverys von LMU möglichst sicher über mehrere
+    /// Signale (jeweils hinreichend):
+    /// <list type="number">
+    /// <item>von einem KI-Bot gefahren – Bots nutzen ausschließlich Stock-Liverys;</item>
+    /// <item>offizielles Saison-Muster (Jahr + #Startnummer);</item>
+    /// <item>im selben Rennen von mehreren verschiedenen Fahrern genutzt
+    ///       (kann kein echtes Team sein – jeder fährt sein eigenes Auto);</item>
+    /// <item>insgesamt von sehr vielen (≥ 8) verschiedenen Fahrern genutzt.</item>
+    /// </list>
+    /// Übrig bleiben echte, frei gewählte custom Teamnamen.
     /// </summary>
     private static HashSet<string> StandardLiveries(IReadOnlyList<RaceResult> all)
-        => all
-            .Where(r => !string.IsNullOrWhiteSpace(r.TeamName))
-            .GroupBy(r => r.SessionId)
-            .SelectMany(session => session
-                .GroupBy(r => r.TeamName)
-                .Where(g => g.Select(x => x.DriverName).Distinct().Count() >= 2)
-                .Select(g => g.Key))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    {
+        var named = all.Where(r => !string.IsNullOrWhiteSpace(r.TeamName)).ToList();
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // (1) von einem Bot gefahren
+        foreach (var r in named.Where(r => !r.IsPlayer))
+            result.Add(r.TeamName);
+
+        // (2) offizielles Saison-Muster
+        foreach (var r in named)
+            if (StockLiveryPattern.IsMatch(r.TeamName))
+                result.Add(r.TeamName);
+
+        // (3) im selben Rennen von ≥2 Fahrern genutzt
+        foreach (var session in named.GroupBy(r => r.SessionId))
+            foreach (var team in session
+                         .GroupBy(r => r.TeamName)
+                         .Where(g => g.Select(x => x.DriverName).Distinct().Count() >= 2))
+                result.Add(team.Key);
+
+        // (4) insgesamt von sehr vielen Fahrern genutzt (Sicherheitsnetz)
+        foreach (var team in named
+                     .GroupBy(r => r.TeamName)
+                     .Where(g => g.Select(r => r.DriverName).Distinct().Count() >= 8))
+            result.Add(team.Key);
+
+        return result;
+    }
 }
