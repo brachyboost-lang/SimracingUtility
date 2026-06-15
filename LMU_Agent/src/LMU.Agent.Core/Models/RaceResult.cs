@@ -5,10 +5,24 @@ public class RaceResult
     public int Id { get; set; }
     public string DriverName { get; set; } = string.Empty;
 
+    /// <summary>Eindeutige Kennung der Renn-Session (für die Gruppierung pro Rennen).</summary>
+    public string SessionId { get; set; } = string.Empty;
+
     /// <summary>Zeitstempel der Session (aus dem Ergebnis-XML).</summary>
     public DateTime RaceDate { get; set; }
 
     public string TrackName { get; set; } = string.Empty;
+
+    /// <summary>Team-/Einsatzname des Autos – Fahrer mit gleichem Wert im selben
+    /// Rennen sind Teamkollegen (Fahrerwechsel in der Endurance).</summary>
+    public string TeamName { get; set; } = string.Empty;
+
+    /// <summary>Fahrzeugdatei (VEH) – Fallback-Kennung des Autos.</summary>
+    public string CarEntry { get; set; } = string.Empty;
+
+    /// <summary>Schlüssel zur Auto-/Team-Zuordnung: TeamName, sonst CarEntry.</summary>
+    public string CarKey =>
+        !string.IsNullOrWhiteSpace(TeamName) ? TeamName : CarEntry;
 
     /// <summary>Endposition in der eigenen Fahrzeugklasse (LMU ist multiclass).</summary>
     public int Position { get; set; }

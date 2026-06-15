@@ -40,7 +40,8 @@ public class LMUAgentContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DriverName).IsRequired();
             entity.Property(e => e.Position).IsRequired();
-            entity.Ignore(e => e.IsDnf); // berechnete Eigenschaft, keine Spalte
+            entity.Ignore(e => e.IsDnf);   // berechnete Eigenschaft, keine Spalte
+            entity.Ignore(e => e.CarKey);  // berechnete Eigenschaft, keine Spalte
         });
 
         modelBuilder.Entity<DriverProfile>(entity =>

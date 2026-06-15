@@ -132,12 +132,15 @@ public class RaceResultParser : IRaceResultParser
 
         // LMU: lesbares Datum in <TimeString> (yyyy/MM/dd HH:mm:ss); <DateTime>
         // ist ein Unix-Timestamp. Strecke in <TrackCourse>/<TrackVenue>.
-        var raceDate = ParseDate(
-            raceResults.Descendants("TimeString").FirstOrDefault()?.Value,
-            raceResults.Descendants("DateTime").FirstOrDefault()?.Value);
+        var unix = raceResults.Descendants("DateTime").FirstOrDefault()?.Value?.Trim();
+        var timeString = raceResults.Descendants("TimeString").FirstOrDefault()?.Value;
+        var raceDate = ParseDate(timeString, unix);
         var trackName = (raceResults.Descendants("TrackCourse").FirstOrDefault()
                          ?? raceResults.Descendants("TrackVenue").FirstOrDefault())
                         ?.Value?.Trim() ?? string.Empty;
+
+        // Session-Kennung: Unix-Zeitstempel der Session (eindeutig je Rennen).
+        var sessionId = !string.IsNullOrWhiteSpace(unix) ? unix : (timeString?.Trim() ?? string.Empty);
 
         // Nur die Renn-Session auswerten (nicht Practice/Qualify).
         var race = raceResults.Descendants("Race").FirstOrDefault();
@@ -160,8 +163,11 @@ public class RaceResultParser : IRaceResultParser
             results.Add(new RaceResult
             {
                 DriverName = driver.Element("Name")?.Value?.Trim() ?? string.Empty,
+                SessionId = sessionId,
                 RaceDate = raceDate,
                 TrackName = trackName,
+                TeamName = driver.Element("TeamName")?.Value?.Trim() ?? string.Empty,
+                CarEntry = driver.Element("VehFile")?.Value?.Trim() ?? string.Empty,
                 Position = ParseInt(driver.Element("ClassPosition")?.Value),
                 OverallPosition = ParseInt(driver.Element("Position")?.Value),
                 FieldSize = classCounts.TryGetValue(carClass, out var n) ? n : drivers.Count,
