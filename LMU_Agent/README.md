@@ -71,15 +71,21 @@ Le Mans Ultimate (rFactor-2-Engine) speichert die Rennergebnisse als einzelne
 > **konfigurierbar** (siehe [Konfiguration](#konfiguration)); der eingebaute
 > Default deckt nur die Standard-Steam-Installation ab.
 
-Pro Renn-Session wird ein Datensatz je Fahrer erzeugt: Position, Klasse, Runden,
-beste Rundenzeit und `FinishStatus` (für die DNF-Erkennung). Das angenommene
-XML-Schema ist in [`RaceResultParser`](src/LMU.Agent.Core/Services/RaceResultParser.cs)
-dokumentiert und durch Unit-Tests abgedeckt.
+Pro Renn-Session wird ein Datensatz je Fahrer erzeugt: Klassen-/Gesamtposition,
+Klasse, Runden, beste Rundenzeit und `FinishStatus`. Das XML-Schema ist in
+[`RaceResultParser`](src/LMU.Agent.Core/Services/RaceResultParser.cs) dokumentiert
+und durch Unit-Tests abgedeckt.
 
-> ⚠️ **Noch gegen echte Dateien zu verifizieren:** Die genauen XML-Tag-Namen
-> beruhen auf dem dokumentierten rFactor-2-Format und sollten an einer echten
-> LMU-Ergebnisdatei gegengeprüft werden. Die `Event`/`DriverProfile`-Parser sind
-> unverifizierte Platzhalter und werden vom Dienst derzeit nicht aktiv genutzt.
+> ✅ **Gegen echte LMU-Dateien verifiziert.** Der Parser wurde gegen ~1090 echte
+> Ergebnisdateien (311 Rennen, ~9800 Datensätze) geprüft: Datum (`TimeString`),
+> Strecke (`TrackCourse`), Klassen, Positionen und DNF-Erkennung
+> (`FinishStatus`: `None` = beendet, `DNF` = Ausfall) stimmen. Da LMU multiclass
+> ist, wird die **Klassenposition** ausgewertet und die Top-50 % je Klasse
+> berechnet. Korrupte Einzeldateien (abgebrochene Schreibvorgänge) werden
+> protokolliert und übersprungen.
+>
+> Die `Event`/`DriverProfile`-Parser bleiben unverifizierte Platzhalter und
+> werden vom Dienst derzeit nicht aktiv genutzt.
 
 ## Konfiguration
 
@@ -206,10 +212,10 @@ nicht eingecheckt – es entsteht beim Veröffentlichen.
 
 ## Offene Punkte
 
-- **XML-Tag-Namen gegen eine echte LMU-Ergebnisdatei verifizieren** und den
-  Parser bei Bedarf anpassen.
 - **Event-/DriverProfile-Quellen** klären (Format/Pfad) oder die Platzhalter
   entfernen, falls nicht benötigt.
+- Optional: korrupte Ergebnisdateien (abgebrochene Schreibvorgänge) toleranter
+  behandeln, statt sie zu überspringen.
 - **EF-Migrationen** statt `EnsureCreated`, sobald sich das Schema stabilisiert.
 - Optional: interaktiver Pfad-Picker (Installer/Tray-App) statt reiner
   Konfiguration.

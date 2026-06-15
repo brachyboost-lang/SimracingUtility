@@ -5,42 +5,56 @@ namespace LMU.Agent.Tests;
 
 public class RaceResultParserTests
 {
-    // Beispiel im rFactor-2-/LMU-Ergebnisformat mit drei Fahrern,
-    // davon einer mit DNF.
+    // Beispiel im echten LMU-/rFactor-2-Ergebnisformat: zwei Klassen (Hypercar,
+    // GT3), Datum als TimeString, Strecke als TrackCourse, FinishStatus "None"
+    // für beendet und "DNF" für Ausfall.
     private const string SampleXml = """
         <rFactorXML>
           <RaceResults>
-            <DateTime>2026-06-14 21:30:00</DateTime>
-            <TrackEvent>
-              <TrackName>Circuit de la Sarthe</TrackName>
-            </TrackEvent>
+            <DateTime>1781465400</DateTime>
+            <TimeString>2026/06/14 21:30:00</TimeString>
+            <TrackCourse>Autodromo Nazionale Monza</TrackCourse>
             <Race>
-              <Driver>
-                <Name>Alice</Name>
-                <Position>1</Position>
-                <CarNumber>7</CarNumber>
-                <CarClass>Hypercar</CarClass>
-                <Laps>24</Laps>
-                <BestLapTime>210.123</BestLapTime>
-                <FinishStatus>Finished Normally</FinishStatus>
-              </Driver>
-              <Driver>
-                <Name>Bob</Name>
-                <Position>2</Position>
-                <CarNumber>8</CarNumber>
-                <CarClass>Hypercar</CarClass>
-                <Laps>24</Laps>
-                <BestLapTime>211.500</BestLapTime>
-                <FinishStatus>Finished Normally</FinishStatus>
-              </Driver>
+              <TimeString>2026/06/14 21:55:00</TimeString>
               <Driver>
                 <Name>Charlie</Name>
-                <Position>3</Position>
-                <CarNumber>9</CarNumber>
-                <CarClass>LMP2</CarClass>
+                <CarClass>Hypercar</CarClass>
+                <CarNumber>7</CarNumber>
+                <Position>1</Position>
+                <ClassPosition>1</ClassPosition>
+                <Laps>24</Laps>
+                <BestLapTime>210.123</BestLapTime>
+                <FinishStatus>None</FinishStatus>
+              </Driver>
+              <Driver>
+                <Name>Dave</Name>
+                <CarClass>Hypercar</CarClass>
+                <CarNumber>8</CarNumber>
+                <Position>2</Position>
+                <ClassPosition>2</ClassPosition>
                 <Laps>12</Laps>
                 <BestLapTime>0</BestLapTime>
                 <FinishStatus>DNF</FinishStatus>
+              </Driver>
+              <Driver>
+                <Name>Alice</Name>
+                <CarClass>GT3</CarClass>
+                <CarNumber>21</CarNumber>
+                <Position>3</Position>
+                <ClassPosition>1</ClassPosition>
+                <Laps>23</Laps>
+                <BestLapTime>225.500</BestLapTime>
+                <FinishStatus>None</FinishStatus>
+              </Driver>
+              <Driver>
+                <Name>Bob</Name>
+                <CarClass>GT3</CarClass>
+                <CarNumber>22</CarNumber>
+                <Position>5</Position>
+                <ClassPosition>2</ClassPosition>
+                <Laps>23</Laps>
+                <BestLapTime>226.000</BestLapTime>
+                <FinishStatus>None</FinishStatus>
               </Driver>
             </Race>
           </RaceResults>
@@ -52,32 +66,48 @@ public class RaceResultParserTests
     {
         var results = RaceResultParser.ParseResults(XDocument.Parse(SampleXml));
 
-        Assert.Equal(3, results.Count);
+        Assert.Equal(4, results.Count);
 
         var alice = results.Single(r => r.DriverName == "Alice");
-        Assert.Equal(1, alice.Position);
-        Assert.Equal("Hypercar", alice.CarClass);
-        Assert.Equal("7", alice.CarNumber);
-        Assert.Equal(24, alice.Laps);
-        Assert.Equal(210.123, alice.BestLapTime, 3);
-        Assert.Equal("Circuit de la Sarthe", alice.TrackName);
+        Assert.Equal(1, alice.Position);          // Klassenposition
+        Assert.Equal(3, alice.OverallPosition);   // Gesamtposition
+        Assert.Equal("GT3", alice.CarClass);
+        Assert.Equal(23, alice.Laps);
+        Assert.Equal(225.5, alice.BestLapTime, 3);
+        Assert.Equal("Autodromo Nazionale Monza", alice.TrackName);
         Assert.Equal(new DateTime(2026, 6, 14, 21, 30, 0), alice.RaceDate);
     }
 
     [Fact]
-    public void ParseResults_SetsFieldSizeToDriverCount()
+    public void ParseResults_FieldSizeIsPerClass()
     {
         var results = RaceResultParser.ParseResults(XDocument.Parse(SampleXml));
-        Assert.All(results, r => Assert.Equal(3, r.FieldSize));
+        // 2 Hypercar + 2 GT3 -> jede Klasse hat Feldgröße 2.
+        Assert.All(results, r => Assert.Equal(2, r.FieldSize));
     }
 
     [Fact]
-    public void ParseResults_DetectsDnfFromFinishStatus()
+    public void ParseResults_DetectsDnf_NoneMeansFinished()
     {
         var results = RaceResultParser.ParseResults(XDocument.Parse(SampleXml));
 
-        Assert.False(results.Single(r => r.DriverName == "Alice").IsDnf);
-        Assert.True(results.Single(r => r.DriverName == "Charlie").IsDnf);
+        Assert.False(results.Single(r => r.DriverName == "Alice").IsDnf);   // None
+        Assert.False(results.Single(r => r.DriverName == "Charlie").IsDnf); // None
+        Assert.True(results.Single(r => r.DriverName == "Dave").IsDnf);     // DNF
+    }
+
+    [Fact]
+    public void ParseResults_FallsBackToUnixTimestamp_WhenNoTimeString()
+    {
+        var xml = """
+            <rFactorXML><RaceResults>
+              <DateTime>1781465400</DateTime>
+              <Race><Driver><Name>X</Name><ClassPosition>1</ClassPosition>
+              <FinishStatus>None</FinishStatus></Driver></Race>
+            </RaceResults></rFactorXML>
+            """;
+        var r = RaceResultParser.ParseResults(XDocument.Parse(xml)).Single();
+        Assert.NotEqual(DateTime.MinValue, r.RaceDate);
     }
 
     [Fact]
@@ -101,5 +131,6 @@ public class RaceResultParserTests
         Assert.Equal(0, result.Position);
         Assert.Equal(0, result.Laps);
         Assert.Equal(0d, result.BestLapTime);
+        Assert.False(result.IsDnf); // leerer Status = nicht als DNF werten
     }
 }

@@ -96,8 +96,25 @@ nach Arbeitsverzeichnis verschiedene DBs gesehen.
 **Fix:** Fester Pfad `%LOCALAPPDATA%\LMUAgent\lmu_agent.db`.
 
 ### 15. Fehlende Tests
-**Fix:** Projekt `LMU.Agent.Tests` mit 14 Unit-Tests für XML-Parsing,
+**Fix:** Projekt `LMU.Agent.Tests` mit Unit-Tests für XML-Parsing,
 Statistik-Berechnung und Pfad-Auflösung.
+
+### 16. Schema-Korrekturen aus der Verifikation gegen echte Dateien
+**Problem:** Beim Prüfen gegen ~1090 echte Ergebnisdateien zeigten sich vom
+ursprünglich angenommenen Schema abweichende Details, die den Parser sonst
+falsche Daten hätten liefern lassen:
+- `<DateTime>` ist ein **Unix-Timestamp**, kein lesbares Datum → jetzt wird
+  `<TimeString>` (`yyyy/MM/dd HH:mm:ss`) gelesen, Unix als Fallback.
+- Es gibt **kein `<TrackName>`** → jetzt `<TrackCourse>`/`<TrackVenue>`.
+- `FinishStatus` ist bei Finishern **`None`** (nicht „Finished Normally") →
+  die DNF-Logik hätte sonst alle Finisher als DNF gewertet; jetzt korrigiert.
+- LMU ist **multiclass** → es wird `<ClassPosition>` ausgewertet und die
+  Feldgröße/Top-50 % je Fahrzeugklasse berechnet (Gesamtposition zusätzlich
+  gespeichert).
+- Encoding-tolerantes Laden (Latin-1-Fallback); korrupte Dateien werden
+  übersprungen.
+**Ergebnis:** 311 Rennen / ~9800 Datensätze werden korrekt geparst; nur 3
+beschädigte Dateien werden übersprungen.
 
 ## Website: behobene Bugs (aus BEKANNTE_FEHLER.md)
 

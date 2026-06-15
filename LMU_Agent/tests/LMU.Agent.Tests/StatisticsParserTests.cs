@@ -21,9 +21,9 @@ public class StatisticsParserTests
     {
         var results = new List<RaceResult>
         {
-            Result(1, 10, 100.0, "Finished Normally", new DateTime(2026, 6, 1)),
-            Result(3, 10, 99.0,  "Finished Normally", new DateTime(2026, 6, 2)),
-            Result(6, 10, 101.0, "Finished Normally", new DateTime(2026, 6, 3)),
+            Result(1, 10, 100.0, "None", new DateTime(2026, 6, 1)),
+            Result(3, 10, 99.0,  "None", new DateTime(2026, 6, 2)),
+            Result(6, 10, 101.0, "None", new DateTime(2026, 6, 3)),
             Result(8, 20, 0.0,   "DNF",               new DateTime(2026, 6, 4)),
         };
 
@@ -62,7 +62,7 @@ public class StatisticsParserTests
     {
         var results = new List<RaceResult>
         {
-            Result(1, 0, 100.0, "Finished Normally", new DateTime(2026, 6, 1)),
+            Result(1, 0, 100.0, "None", new DateTime(2026, 6, 1)),
         };
 
         var s = StatisticsParser.ComputeStatistics("Alice", results);
@@ -75,11 +75,11 @@ public class StatisticsParserTests
         // Feld 7 -> Top 50 % = Top 4 (aufgerundet). Pos 4 zählt, Pos 5 nicht.
         var inHalf = StatisticsParser.ComputeStatistics("Alice", new List<RaceResult>
         {
-            Result(4, 7, 0, "Finished Normally", new DateTime(2026, 6, 1)),
+            Result(4, 7, 0, "None", new DateTime(2026, 6, 1)),
         });
         var outOfHalf = StatisticsParser.ComputeStatistics("Alice", new List<RaceResult>
         {
-            Result(5, 7, 0, "Finished Normally", new DateTime(2026, 6, 1)),
+            Result(5, 7, 0, "None", new DateTime(2026, 6, 1)),
         });
 
         Assert.Equal(1, inHalf.TopHalf);

@@ -10,10 +10,13 @@ public class RaceResult
 
     public string TrackName { get; set; } = string.Empty;
 
-    /// <summary>Endposition des Fahrers im Rennen.</summary>
+    /// <summary>Endposition in der eigenen Fahrzeugklasse (LMU ist multiclass).</summary>
     public int Position { get; set; }
 
-    /// <summary>Anzahl der Teilnehmer in diesem Rennen (für Top-50%-Auswertung).</summary>
+    /// <summary>Gesamtposition über alle Klassen (informativ).</summary>
+    public int OverallPosition { get; set; }
+
+    /// <summary>Anzahl der Teilnehmer in derselben Klasse (für Top-50%-Auswertung).</summary>
     public int FieldSize { get; set; }
 
     public int Laps { get; set; }
@@ -21,13 +24,25 @@ public class RaceResult
     /// <summary>Beste Rundenzeit in Sekunden (0, falls keine gültige Runde).</summary>
     public double BestLapTime { get; set; }
 
-    /// <summary>Roh-Status aus dem XML, z. B. "Finished Normally", "DNF", "DQ".</summary>
+    /// <summary>Roh-Status aus dem XML. In LMU: "None" = beendet, "DNF"/"DQ"/"DNS" = Ausfall.</summary>
     public string FinishStatus { get; set; } = string.Empty;
 
     public string CarNumber { get; set; } = string.Empty;
     public string CarClass { get; set; } = string.Empty;
 
-    /// <summary>True, wenn der Fahrer das Rennen nicht regulär beendet hat.</summary>
-    public bool IsDnf =>
-        !FinishStatus.Contains("Finished", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// True, wenn der Fahrer das Rennen nicht regulär beendet hat. LMU markiert
+    /// beendete Rennen mit "None"; alles andere außer "Finished*" gilt als Ausfall.
+    /// </summary>
+    public bool IsDnf
+    {
+        get
+        {
+            var s = FinishStatus?.Trim() ?? string.Empty;
+            if (s.Length == 0) return false;
+            if (s.Equals("None", StringComparison.OrdinalIgnoreCase)) return false;
+            if (s.Contains("Finished", StringComparison.OrdinalIgnoreCase)) return false;
+            return true;
+        }
+    }
 }

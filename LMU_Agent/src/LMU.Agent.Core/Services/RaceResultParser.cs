@@ -9,21 +9,22 @@ namespace LMU.Agent.Core.Services;
 /// <summary>
 /// Liest die Rennergebnisse von Le Mans Ultimate. Diese liegen als einzelne
 /// XML-Dateien im Ordner <c>UserData\Log\Results</c> der Spielinstallation
-/// (rFactor-2-Engine-Format). Das angenommene Schema:
+/// (rFactor-2-Engine-Format). Schema gegen echte LMU-Dateien verifiziert:
 /// <code>
 /// &lt;rFactorXML&gt;
 ///   &lt;RaceResults&gt;
-///     &lt;DateTime&gt;2025-06-01 22:55:03&lt;/DateTime&gt;
-///     &lt;TrackEvent&gt;&lt;TrackName&gt;Le Mans&lt;/TrackName&gt;&lt;/TrackEvent&gt;
+///     &lt;DateTime&gt;1761201666&lt;/DateTime&gt;           &lt;!-- Unix-Timestamp --&gt;
+///     &lt;TimeString&gt;2025/10/23 08:41:06&lt;/TimeString&gt; &lt;!-- lesbares Datum --&gt;
+///     &lt;TrackCourse&gt;Autodromo Nazionale Monza&lt;/TrackCourse&gt;
 ///     &lt;Race&gt;
 ///       &lt;Driver&gt;
 ///         &lt;Name&gt;...&lt;/Name&gt;
-///         &lt;Position&gt;1&lt;/Position&gt;
-///         &lt;CarNumber&gt;7&lt;/CarNumber&gt;
-///         &lt;CarClass&gt;Hypercar&lt;/CarClass&gt;
+///         &lt;CarClass&gt;GT3&lt;/CarClass&gt;
+///         &lt;Position&gt;3&lt;/Position&gt;             &lt;!-- Gesamtposition --&gt;
+///         &lt;ClassPosition&gt;1&lt;/ClassPosition&gt;   &lt;!-- Position in der Klasse --&gt;
 ///         &lt;Laps&gt;24&lt;/Laps&gt;
 ///         &lt;BestLapTime&gt;210.123&lt;/BestLapTime&gt;
-///         &lt;FinishStatus&gt;Finished Normally&lt;/FinishStatus&gt;
+///         &lt;FinishStatus&gt;None&lt;/FinishStatus&gt;  &lt;!-- "None" = beendet, "DNF" = Ausfall --&gt;
 ///       &lt;/Driver&gt;
 ///     &lt;/Race&gt;
 ///   &lt;/RaceResults&gt;
@@ -102,7 +103,19 @@ public class RaceResultParser : IRaceResultParser
 
     public static IEnumerable<RaceResult> ParseResultsFile(string path)
     {
-        var doc = XDocument.Load(path);
+        XDocument doc;
+        try
+        {
+            doc = XDocument.Load(path);
+        }
+        catch (System.Xml.XmlException)
+        {
+            // Manche Ergebnisdateien deklarieren UTF-8, enthalten aber abweichend
+            // kodierte Zeichen (z. B. in Fahrernamen). Tolerant als Latin-1 lesen
+            // (bildet jedes Byte auf ein Zeichen ab und wirft daher nie) und parsen.
+            var text = File.ReadAllText(path, System.Text.Encoding.Latin1);
+            doc = XDocument.Parse(text);
+        }
         return ParseResults(doc);
     }
 
@@ -117,34 +130,46 @@ public class RaceResultParser : IRaceResultParser
             return results;
         }
 
-        var raceDate = ParseDate(raceResults.Element("DateTime")?.Value);
-        var trackName = raceResults.Descendants("TrackName").FirstOrDefault()?.Value?.Trim()
-                        ?? string.Empty;
+        // LMU: lesbares Datum in <TimeString> (yyyy/MM/dd HH:mm:ss); <DateTime>
+        // ist ein Unix-Timestamp. Strecke in <TrackCourse>/<TrackVenue>.
+        var raceDate = ParseDate(
+            raceResults.Descendants("TimeString").FirstOrDefault()?.Value,
+            raceResults.Descendants("DateTime").FirstOrDefault()?.Value);
+        var trackName = (raceResults.Descendants("TrackCourse").FirstOrDefault()
+                         ?? raceResults.Descendants("TrackVenue").FirstOrDefault())
+                        ?.Value?.Trim() ?? string.Empty;
 
         // Nur die Renn-Session auswerten (nicht Practice/Qualify).
-        var race = raceResults.Element("Race");
+        var race = raceResults.Descendants("Race").FirstOrDefault();
         if (race == null)
         {
             return results;
         }
 
         var drivers = race.Elements("Driver").ToList();
-        var fieldSize = drivers.Count;
+
+        // LMU ist multiclass: Feldgröße je Fahrzeugklasse bestimmen.
+        var classCounts = drivers
+            .GroupBy(d => d.Element("CarClass")?.Value?.Trim() ?? string.Empty)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         foreach (var driver in drivers)
         {
+            var carClass = driver.Element("CarClass")?.Value?.Trim() ?? string.Empty;
+
             results.Add(new RaceResult
             {
                 DriverName = driver.Element("Name")?.Value?.Trim() ?? string.Empty,
                 RaceDate = raceDate,
                 TrackName = trackName,
-                Position = ParseInt(driver.Element("Position")?.Value),
-                FieldSize = fieldSize,
+                Position = ParseInt(driver.Element("ClassPosition")?.Value),
+                OverallPosition = ParseInt(driver.Element("Position")?.Value),
+                FieldSize = classCounts.TryGetValue(carClass, out var n) ? n : drivers.Count,
                 Laps = ParseLaps(driver),
                 BestLapTime = ParseDouble(driver.Element("BestLapTime")?.Value),
                 FinishStatus = driver.Element("FinishStatus")?.Value?.Trim() ?? string.Empty,
                 CarNumber = driver.Element("CarNumber")?.Value?.Trim() ?? string.Empty,
-                CarClass = driver.Element("CarClass")?.Value?.Trim() ?? string.Empty,
+                CarClass = carClass,
             });
         }
 
@@ -162,12 +187,24 @@ public class RaceResultParser : IRaceResultParser
         return driver.Elements("Lap").Count();
     }
 
-    private static DateTime ParseDate(string? value)
+    private static DateTime ParseDate(string? timeString, string? unixSeconds)
     {
-        if (DateTime.TryParse(value, CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeLocal, out var date))
+        // Primär: lesbarer Zeitstring "yyyy/MM/dd HH:mm:ss".
+        if (DateTime.TryParseExact(timeString?.Trim(), "yyyy/MM/dd HH:mm:ss",
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var date))
         {
             return date;
+        }
+        // Toleranter Versuch für abweichende Formate.
+        if (DateTime.TryParse(timeString, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeLocal, out date))
+        {
+            return date;
+        }
+        // Fallback: Unix-Timestamp aus <DateTime>.
+        if (long.TryParse(unixSeconds, out var seconds))
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(seconds).LocalDateTime;
         }
         return DateTime.MinValue;
     }
