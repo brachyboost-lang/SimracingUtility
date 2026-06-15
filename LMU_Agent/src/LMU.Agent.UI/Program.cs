@@ -1,3 +1,4 @@
+using LMU.Agent.Core.Data;
 using LMU.Agent.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,7 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
+
+// EF-Core-Kontext (SQLite, gemeinsamer Pfad mit dem Dienst)
+builder.Services.AddScoped<LMUAgentContext>();
 
 // Register Core Services
 builder.Services.AddScoped<IEventParser, EventParser>();
@@ -22,9 +26,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
-// API endpoints are provided by the controllers in Controllers/
-// (EventsController, ResultsController, ProfilesController, StatisticsController)
+// API-Endpunkte (attribut-basiert) und die Stats-Seite (Views).
 app.MapControllers();
 
 app.Run();

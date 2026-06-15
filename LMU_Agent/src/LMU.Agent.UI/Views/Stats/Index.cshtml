@@ -1,0 +1,74 @@
+@model List<LMU.Agent.Core.Models.Statistics>
+@{
+    Layout = null;
+    string Lap(double s) => s > 0 ? TimeSpan.FromSeconds(s).ToString(@"mm\:ss\.fff") : "–";
+}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LMU-Agent – Fahrerstatistiken</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Fahrerstatistiken</h1>
+        <span class="badge text-bg-secondary">@Model.Count Fahrer</span>
+    </div>
+    <p class="text-muted">
+        Aus den erfassten Le-Mans-Ultimate-Rennergebnissen berechnet.
+    </p>
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-warning">
+            Noch keine Ergebnisse erfasst. Läuft der Agent-Dienst und ist der
+            Ergebnis-Pfad (<code>Lmu:ResultsPath</code> bzw.
+            <code>LMU_RESULTS_PATH</code>) korrekt gesetzt?
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Fahrer</th>
+                        <th class="text-end">Rennen</th>
+                        <th class="text-end">P1</th>
+                        <th class="text-end">Podium</th>
+                        <th class="text-end">Top 5</th>
+                        <th class="text-end">Top 10</th>
+                        <th class="text-end">Top 50 %</th>
+                        <th class="text-end">DNF</th>
+                        <th class="text-end">Beste Pos.</th>
+                        <th class="text-end">Beste Runde</th>
+                        <th>Letztes Rennen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>@s.DriverName</td>
+                        <td class="text-end">@s.TotalRaces</td>
+                        <td class="text-end">@s.Wins</td>
+                        <td class="text-end">@s.Podiums</td>
+                        <td class="text-end">@s.Top5</td>
+                        <td class="text-end">@s.Top10</td>
+                        <td class="text-end">@s.TopHalf</td>
+                        <td class="text-end">@s.Dnf</td>
+                        <td class="text-end">@(s.BestPosition > 0 ? s.BestPosition.ToString() : "–")</td>
+                        <td class="text-end">@Lap(s.FastestLapTime)</td>
+                        <td>@(s.LastRaceDate == DateTime.MinValue ? "–" : s.LastRaceDate.ToString("yyyy-MM-dd HH:mm"))</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+</body>
+</html>
