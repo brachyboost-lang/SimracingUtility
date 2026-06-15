@@ -40,43 +40,72 @@ LMU_Agent/
 ├── LMU.Agent.slnx
 ├── publish.ps1                 # baut & paketiert den Dienst für die Website
 ├── README.md
-└── src/
-    ├── LMU.Agent.Core/
-    │   ├── Models/             # Event, RaceResult (+ LapTime), DriverProfile, Statistics
-    │   ├── Data/               # LMUAgentContext (SQLite)
-    │   └── Services/           # I*Parser + Implementierungen
-    ├── LMU.Agent.UI/
-    │   ├── Controllers/        # Events / Results / Profiles / Statistics
-    │   └── Program.cs
-    └── LMU.Agent.Service/
-        ├── Program.cs          # Generic Host + AddWindowsService
-        └── Worker.cs           # BackgroundService (periodische Erfassung)
+├── src/
+│   ├── LMU.Agent.Core/
+│   │   ├── Models/             # RaceResult, Statistics, Event, DriverProfile
+│   │   ├── Data/               # LMUAgentContext (SQLite, gemeinsamer Pfad)
+│   │   └── Services/           # I*Parser + Implementierungen, LmuPathResolver
+│   ├── LMU.Agent.UI/
+│   │   ├── Controllers/        # API: Results/Stats/Events/Profiles  +  StatsController
+│   │   ├── Views/Stats/        # HTML-Statistikseite
+│   │   └── Program.cs
+│   └── LMU.Agent.Service/
+│       ├── Program.cs          # Generic Host + AddWindowsService
+│       ├── Worker.cs           # BackgroundService (periodische Erfassung)
+│       └── appsettings.json    # Lmu:ResultsPath
+└── tests/
+    └── LMU.Agent.Tests/        # xUnit-Tests (Parser, Statistik, Pfad)
 ```
 
 ## 📊 Datenquellen
 
-Der Agent liest die lokalen JSON-Dateien von Le Mans Ultimate. Standardpfad
-(überschreibbar per Umgebungsvariable `LMU_DATA_PATH`):
+Le Mans Ultimate (rFactor-2-Engine) speichert die Rennergebnisse als einzelne
+**XML-Dateien** im **Steam-Installationsordner**:
 
 ```
-%USERPROFILE%\AppData\LocalLow\SlightlyMad\LeMansUltimate\
+<Steam>\steamapps\common\Le Mans Ultimate\UserData\Log\Results\*.xml
 ```
 
-| Datei | Beschreibung |
-|-------|--------------|
-| `Events.json` | Anstehende und vergangene Events |
-| `RaceResults.json` | Ergebnisse der letzten Rennen |
-| `DriverProfiles.json` | Fahrer-Profilinformationen |
+> ⚠️ **Pfad ist pro User verschieden.** Steam kann auf jedem Laufwerk / in jeder
+> Library liegen – ein fester Default ist nicht zuverlässig. Der Pfad ist daher
+> **konfigurierbar** (siehe [Konfiguration](#konfiguration)); der eingebaute
+> Default deckt nur die Standard-Steam-Installation ab.
 
-> ⚠️ **Hinweis:** Die Datenmodelle bilden ein angenommenes JSON-Schema ab und sind
-> noch nicht gegen echte LMU-Dateien verifiziert. Das ist der offene
-> Machbarkeits-/Risikopunkt des Projekts (siehe [Offene Punkte](#offene-punkte)).
+Pro Renn-Session wird ein Datensatz je Fahrer erzeugt: Position, Klasse, Runden,
+beste Rundenzeit und `FinishStatus` (für die DNF-Erkennung). Das angenommene
+XML-Schema ist in [`RaceResultParser`](src/LMU.Agent.Core/Services/RaceResultParser.cs)
+dokumentiert und durch Unit-Tests abgedeckt.
+
+> ⚠️ **Noch gegen echte Dateien zu verifizieren:** Die genauen XML-Tag-Namen
+> beruhen auf dem dokumentierten rFactor-2-Format und sollten an einer echten
+> LMU-Ergebnisdatei gegengeprüft werden. Die `Event`/`DriverProfile`-Parser sind
+> unverifizierte Platzhalter und werden vom Dienst derzeit nicht aktiv genutzt.
+
+## Konfiguration
+
+Der Ergebnis-Ordner wird in dieser Reihenfolge bestimmt:
+
+1. `Lmu:ResultsPath` in [`appsettings.json`](src/LMU.Agent.Service/appsettings.json)
+2. Umgebungsvariable `LMU_RESULTS_PATH`
+3. Standard-Steam-Pfad (Fallback)
+
+Existiert der Ordner nicht, protokolliert der Dienst eine Warnung mit Anleitung
+und überspringt den Lauf (kein Absturz).
 
 ## 🗄️ Datenbank
 
-**SQLite** als lokale Datei-Datenbank (`lmu_agent.db` im Arbeitsverzeichnis des
-Dienstes). Das Schema wird beim Start per `Database.EnsureCreatedAsync()` angelegt
-– es gibt (noch) **keine EF-Migrationen**.
+**SQLite** als lokale Datei-Datenbank unter
+`%LOCALAPPDATA%\LMUAgent\lmu_agent.db` – ein **fester, gemeinsamer Pfad**, damit
+Dienst (Schreiber) und Web-API (Leser) unabhängig vom Arbeitsverzeichnis dieselbe
+Datenbank verwenden. Das Schema wird beim Start per
+`Database.EnsureCreatedAsync()` angelegt – es gibt (noch) **keine EF-Migrationen**.
+
+### Berechnete Statistiken
+
+Pro Fahrer werden aus den Rennergebnissen berechnet: Anzahl Rennen, **P1** (Siege),
+**Podium** (Top 3), **Top 5**, **Top 10**, **Top 50 %** des Feldes, **DNF**, beste
+Position, schnellste Runde und letztes Renndatum. Positionsbasierte Zähler werten
+nur regulär beendete Rennen; DNFs werden separat gezählt.
 
 ### Idempotentes Schreiben
 
@@ -107,6 +136,10 @@ mehrfach zählen. Natürliche Schlüssel:
 | `/api/statistics/driver/{name}` | GET | Statistiken eines Fahrers |
 | `/api/statistics/recalculate` | POST | Statistiken neu berechnen & speichern |
 
+Zusätzlich rendert das UI-Projekt unter **`/`** bzw. **`/stats`** eine
+HTML-Statistikseite (Tabelle aller Fahrer) – als schnelle Sichtprüfung, ob der
+Agent die Ergebnisse korrekt erfasst hat.
+
 ## 🚀 Installation als Windows-Dienst
 
 Am einfachsten über das Publish-Skript (legt das Artefakt zugleich für den
@@ -125,11 +158,16 @@ sc create "LMU Agent" binPath= "C:\Pfad\zu\publish\LMU.Agent.Service.exe"
 sc start "LMU Agent"
 ```
 
-Optionalen Datenpfad setzen:
+Ergebnis-Pfad setzen (falls Steam nicht im Standardpfad liegt):
 
 ```powershell
-[System.Environment]::SetEnvironmentVariable("LMU_DATA_PATH", "C:\Pfad\zu\LMU\Daten", "Machine")
+[System.Environment]::SetEnvironmentVariable("LMU_RESULTS_PATH", "D:\Steam\steamapps\common\Le Mans Ultimate\UserData\Log\Results", "Machine")
 ```
+
+> Ein Hintergrund-Windows-Dienst kann keinen interaktiven First-Run-Dialog
+> zeigen – der Pfad wird daher über Konfiguration/Umgebungsvariable gesetzt. Für
+> eine spätere interaktive Installer-/Tray-Variante wäre hier ein Pfad-Picker der
+> passende Ort.
 
 ## 🛠️ Entwicklung
 
@@ -146,10 +184,16 @@ Service-Installation):
 dotnet run --project src/LMU.Agent.Service
 ```
 
-Web-API lokal starten:
+Web-API + Statistikseite lokal starten:
 
 ```powershell
 dotnet run --project src/LMU.Agent.UI
+```
+
+Tests ausführen:
+
+```powershell
+dotnet test tests/LMU.Agent.Tests/LMU.Agent.Tests.csproj
 ```
 
 ## Integration mit der Website
@@ -162,9 +206,13 @@ nicht eingecheckt – es entsteht beim Veröffentlichen.
 
 ## Offene Punkte
 
-- **Echtes LMU-JSON-Format verifizieren** und die Modelle anpassen.
+- **XML-Tag-Namen gegen eine echte LMU-Ergebnisdatei verifizieren** und den
+  Parser bei Bedarf anpassen.
+- **Event-/DriverProfile-Quellen** klären (Format/Pfad) oder die Platzhalter
+  entfernen, falls nicht benötigt.
 - **EF-Migrationen** statt `EnsureCreated`, sobald sich das Schema stabilisiert.
-- **Unit-Tests** für die Parser und die Statistikberechnung ergänzen.
+- Optional: interaktiver Pfad-Picker (Installer/Tray-App) statt reiner
+  Konfiguration.
 
 ## 📝 Lizenz
 

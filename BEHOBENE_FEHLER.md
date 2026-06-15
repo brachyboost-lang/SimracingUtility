@@ -69,3 +69,53 @@ Schreiben idempotent; der Worker liest nun gefahrlos periodisch neu ein.
 
 ### 11. Aufräumen
 Leeren Platzhalter `Class1.cs` entfernt.
+
+## LMU-Agent: Datenquelle & Statistik (falsche Grundannahme korrigiert)
+
+### 12. Falsches Format und falscher Pfad
+**Problem:** Der Agent ging von JSON-Dateien (`Events.json` etc.) in
+`AppData\LocalLow\SlightlyMad\LeMansUltimate` aus. Tatsächlich speichert LMU
+(rFactor-2-Engine) die Ergebnisse als **XML** im **Steam-Installationsordner**
+(`UserData\Log\Results\*.xml`); „SlightlyMad" ist zudem das falsche Studio.
+**Fix:** `RaceResultParser` liest jetzt einen Ordner mit `*.xml` im
+rFactor-2-Format. Pfad konfigurierbar über `Lmu:ResultsPath` /
+`LMU_RESULTS_PATH` / Steam-Default (`LmuPathResolver`), mit Existenzprüfung und
+Anleitung im Log. Damit ist auch die Frage beantwortet: ein fester Pfad ist
+**nicht** für jeden User sicher.
+
+### 13. Statistik unvollständig & abhängig von Profil-Datei
+**Problem:** Es gab nur grobe Kennzahlen und sie hingen von einer (nicht
+existenten) Profil-Datei ab.
+**Fix:** Statistiken werden aus den Ergebnissen abgeleitet und um P1, Podium,
+Top 5, Top 10, Top 50 % und DNF erweitert; DNFs zählen nicht als beendete
+Position. Eine HTML-Seite (`/stats`) macht das Ergebnis sichtbar.
+
+### 14. Geteilte Datenbank
+**Problem:** `Data Source=lmu_agent.db` (relativ) → Dienst und Web-API hätten je
+nach Arbeitsverzeichnis verschiedene DBs gesehen.
+**Fix:** Fester Pfad `%LOCALAPPDATA%\LMUAgent\lmu_agent.db`.
+
+### 15. Fehlende Tests
+**Fix:** Projekt `LMU.Agent.Tests` mit 14 Unit-Tests für XML-Parsing,
+Statistik-Berechnung und Pfad-Auflösung.
+
+## Website: behobene Bugs (aus BEKANNTE_FEHLER.md)
+
+### W1. Spalten vertauscht in AJAX-Zeilen
+**Fix:** Reihenfolge in der `cols`-Liste auf `Car Class` → `Car Name` korrigiert
+(passend zum Tabellen-Header), irreführenden Kommentar angepasst.
+
+### W2. `Calculate`-Endpunkt ohne Validierung
+**Fix:** `ModelState.IsValid` wird geprüft; bei ungültigen Daten `BadRequest`,
+bevor gerechnet/gespeichert wird.
+
+### W5. Übersicht lud komplette Setup-Dateien
+**Fix:** Projektion auf ein `Setup` **ohne `FileData`**; die Bytes werden erst
+im Download geladen.
+
+### W6. Filter-Platzhalter „Alle" ging verloren
+**Fix:** Platzhalter über `data-placeholder` konfigurierbar (Filter: „Alle",
+Formular: „… wählen").
+
+### W7. Stiller Cap auf 200 Setups
+**Fix:** Hinweis in der Übersicht, wenn die Liste auf 200 Einträge begrenzt ist.

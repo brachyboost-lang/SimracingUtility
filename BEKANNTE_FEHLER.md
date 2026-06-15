@@ -2,7 +2,11 @@
 
 Ergebnis einer Logik-Analyse des Projekts. Sortiert nach Schweregrad.
 
-## 1. Spalten vertauscht in AJAX-Zeilen (sicher)
+> **Stand:** Die Punkte **#1, #2, #5, #6 und #7 sind behoben** – Details in
+> [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md). Offen bleiben die
+> Modellierungsfragen **#3** und **#4** sowie die Betriebshinweise unter **#8**.
+
+## 1. Spalten vertauscht in AJAX-Zeilen (sicher) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/Views/FuelCalc/Index.cshtml](SimracingUtility/Views/FuelCalc/Index.cshtml) (Zeile ~228–231)
 
@@ -24,7 +28,7 @@ Seiten-Neuladen stimmt die Zuordnung wieder.
 **Fix:** In der `cols`-Liste `data.carClass` und `data.carName` tauschen
 (und den irreführenden Kommentar in Zeile ~221 korrigieren).
 
-## 2. `Calculate`-Endpunkt überspringt die Validierung (echter Bug)
+## 2. `Calculate`-Endpunkt überspringt die Validierung (echter Bug) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/Controllers/FuelCalcController.cs:143](SimracingUtility/Controllers/FuelCalcController.cs)
 
@@ -69,7 +73,7 @@ Inkonsistenz zwischen `TotalFuelNeeded` (mit altem Stopp-Wert berechnet) und
 
 # Setup-Hub (zweite Analyse-Runde)
 
-## 5. Übersicht lädt komplette Setup-Dateien mit (Effizienz, relevant)
+## 5. Übersicht lädt komplette Setup-Dateien mit (Effizienz, relevant) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/Controllers/SetupController.cs:31](SimracingUtility/Controllers/SetupController.cs) (`Index`)
 
@@ -96,7 +100,7 @@ und Größe der Setups.
 (`.Select(s => new SetupListItem { ... })`); die Datei erst im `Download`-Endpunkt
 laden (dort geschieht es bereits korrekt).
 
-## 6. Filter-Platzhalter „Alle" geht beim Sim-Wechsel verloren (klein, UX)
+## 6. Filter-Platzhalter „Alle" geht beim Sim-Wechsel verloren (klein, UX) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/wwwroot/js/setup-hub.js](SimracingUtility/wwwroot/js/setup-hub.js) (`fillSelect`)
 
@@ -111,7 +115,7 @@ funktioniert weiterhin korrekt; nur die Beschriftung passt im Filter-Kontext nic
 **Fix:** Platzhaltertext über ein `data-`-Attribut konfigurierbar machen (Formular:
 „wählen", Filter: „Alle").
 
-## 7. Stiller Cap auf 200 Setups (klein)
+## 7. Stiller Cap auf 200 Setups (klein) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/Controllers/SetupController.cs:43](SimracingUtility/Controllers/SetupController.cs)
 
