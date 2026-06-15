@@ -176,13 +176,17 @@ an die Website; diese speichert sie in PostgreSQL und zeigt sie an.
 | Route | Zweck |
 |-------|-------|
 | `POST /api/lmu/stats` | Ingest-Endpunkt; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key` muss `Lmu:IngestApiKey` entsprechen) |
-| `/LmuStats` | „Meine Stats": getrennte **Sprint-/Endurance**-KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position), **beste Runde je Strecke** und **„Am meisten gefahren mit"** |
+| `/LmuStats` | „Meine Stats": getrennte **Sprint-/Endurance**-KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position), **beste Runde je Strecke** (mit Telemetrie-Download), **„Am meisten gefahren mit"** und **häufigste gegnerische custom Teams** |
 
 Datenmodell: `LmuDriver` (ein Datensatz je Fahrer, Upsert beim Push) mit
 `LmuCategoryStat` (Sprint/Endurance), `LmuTrackBest` (beste Runde je Strecke) und
-`LmuRacedWith` (häufigste menschliche Mitstreiter). KI-Trainingsrennen werden
-ausgeschlossen. Der API-Key steht unter `Lmu:IngestApiKey` in
-[`appsettings.json`](SimracingUtility/appsettings.json).
+`LmuRacedWith` (Mitstreiter und gegnerische Teams, unterschieden über `Kind`).
+KI-Trainingsrennen werden ausgeschlossen. Der API-Key steht unter
+`Lmu:IngestApiKey` in [`appsettings.json`](SimracingUtility/appsettings.json).
+
+Pro Strecke verlinkt die Seite zudem einen **Telemetrie-Download** (`.ld`+`.ldx`
+als ZIP), den der lokal laufende Agent unter `Lmu:AgentTelemetryUrl`
+(Default `http://localhost:5601`) bereitstellt.
 
 ## Lokal starten
 

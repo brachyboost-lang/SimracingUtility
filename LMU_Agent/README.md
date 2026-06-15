@@ -93,10 +93,12 @@ Der Ergebnis-Ordner wird in dieser Reihenfolge bestimmt:
 
 1. `Lmu:ResultsPath` in [`appsettings.json`](src/LMU.Agent.Service/appsettings.json)
 2. Umgebungsvariable `LMU_RESULTS_PATH`
-3. Standard-Steam-Pfad (Fallback)
+3. **Automatische Steam-Erkennung** (scannt `…\Steam`/`…\SteamLibrary` aller
+   Laufwerke und `libraryfolders.vdf`) – meist ist keine Konfiguration nötig.
+4. Standard-Steam-Pfad (Fallback)
 
-Existiert der Ordner nicht, protokolliert der Dienst eine Warnung mit Anleitung
-und überspringt den Lauf (kein Absturz).
+Existiert der Ordner nicht, wird eine Warnung protokolliert und der Lauf
+übersprungen (kein Absturz).
 
 ### Push an die Website
 
@@ -137,6 +139,9 @@ Ergebnissen). Wichtige Regeln aus dem Abgleich mit echten Dateien:
   im selben Rennen war. Echte *Teamkollegen* (Fahrerwechsel) sind nicht ableitbar –
   die Ergebnisse listen genau einen Fahrer pro Auto, und `TeamName` ist keine
   eindeutige Auto-Kennung.
+- **Häufigste gegnerische custom Teams**: Standard-/Default-Liverys (ein
+  `TeamName`, den in einem Rennen mehrere Fahrer nutzen) werden herausgefiltert,
+  sodass nur echte Team-Namen übrig bleiben.
 
 ### Idempotentes Schreiben
 
@@ -171,34 +176,36 @@ Zusätzlich rendert das UI-Projekt unter **`/`** bzw. **`/stats`** eine
 HTML-Statistikseite (Tabelle aller Fahrer) – als schnelle Sichtprüfung, ob der
 Agent die Ergebnisse korrekt erfasst hat.
 
-## 🚀 Installation als Windows-Dienst
+## 🚀 Installation & Nutzung (Tray-App)
 
-Am einfachsten über das Publish-Skript (legt das Artefakt zugleich für den
-Website-Download ab):
+Der Agent ist eine **normale Windows-Anwendung mit Tray-Symbol** – kein
+Dienst-Setup, keine Admin-Rechte nötig.
 
 ```powershell
-# im Ordner LMU_Agent
+# im Ordner LMU_Agent: self-contained .exe erzeugen (legt das ZIP zugleich für
+# den Website-Download ab)
 pwsh ./publish.ps1
 ```
 
-Das Skript erzeugt unter `publish/` eine self-contained `LMU.Agent.Service.exe`.
-Diese als Dienst registrieren (**PowerShell als Administrator**):
+1. ZIP herunterladen/entpacken und `LMU.Agent.Service.exe` **doppelklicken**.
+2. Es erscheint ein Symbol im **Infobereich (Tray)** unten rechts. Der Agent liest
+   die Renndaten ein und pusht sie an die Website.
+3. **Rechtsklick aufs Tray-Symbol** → „Ergebnis-Ordner öffnen",
+   „Telemetrie-Ordner öffnen" oder **„Beenden"** (stoppt den Agent).
 
-```powershell
-sc create "LMU Agent" binPath= "C:\Pfad\zu\publish\LMU.Agent.Service.exe"
-sc start "LMU Agent"
-```
+Der Steam-/Ergebnis-Pfad wird automatisch erkannt; nur bei exotischen
+Installationen muss `LMU_RESULTS_PATH` bzw. `Lmu:ResultsPath` gesetzt werden.
+Für den Autostart die `.exe` in den Windows-Autostart-Ordner legen
+(`shell:startup`).
 
-Ergebnis-Pfad setzen (falls Steam nicht im Standardpfad liegt):
+## 📥 Telemetrie-Download
 
-```powershell
-[System.Environment]::SetEnvironmentVariable("LMU_RESULTS_PATH", "D:\Steam\steamapps\common\Le Mans Ultimate\UserData\Log\Results", "Machine")
-```
-
-> Ein Hintergrund-Windows-Dienst kann keinen interaktiven First-Run-Dialog
-> zeigen – der Pfad wird daher über Konfiguration/Umgebungsvariable gesetzt. Für
-> eine spätere interaktive Installer-/Tray-Variante wäre hier ein Pfad-Picker der
-> passende Ort.
+Der Agent stellt lokal einen kleinen HTTP-Endpunkt bereit
+(`http://localhost:5601/telemetry?track=<Strecke>`, Port via `Telemetry:Port`),
+der die MoTeC-Dateien einer Strecke als **ZIP** ausliefert (`.ld` + `.ldx`
+zusammen) – die Dateien liegen in `<Spiel>\LOG`. Die Website-Seite **„Meine
+Stats"** verlinkt diesen Download je Strecke (funktioniert auf dem Rechner, auf
+dem der Agent läuft).
 
 ## 🛠️ Entwicklung
 
@@ -208,14 +215,13 @@ Alle drei Projekte bauen:
 dotnet build LMU.Agent.slnx
 ```
 
-Dienst zum Debuggen direkt als Konsole starten (läuft dank Generic Host ohne
-Service-Installation):
+Tray-App starten (zeigt das Tray-Symbol, Hintergrund-Loop + Telemetrie-Server):
 
 ```powershell
 dotnet run --project src/LMU.Agent.Service
 ```
 
-Web-API + Statistikseite lokal starten:
+Web-API + Statistikseite (Legacy-UI) lokal starten:
 
 ```powershell
 dotnet run --project src/LMU.Agent.UI
@@ -229,9 +235,10 @@ dotnet test tests/LMU.Agent.Tests/LMU.Agent.Tests.csproj
 
 ## Integration mit der Website
 
-**Datenfluss (Push).** Nach jeder Erfassung berechnet der Dienst das
-Nutzer-Dashboard (eigene Statistik + häufigste Teamkollegen/Gegner) und sendet es
-per `POST {Website:BaseUrl}/api/lmu/stats` (Header `X-Api-Key`) an die Website.
+**Datenfluss (Push).** Nach jeder Erfassung berechnet der Agent das
+Nutzer-Dashboard (Sprint-/Endurance-Stats, Strecken-Bestzeiten, häufigste
+Mitstreiter und gegnerische custom Teams) und sendet es per
+`POST {Website:BaseUrl}/api/lmu/stats` (Header `X-Api-Key`) an die Website.
 Diese speichert es in PostgreSQL und zeigt es unter **`/LmuStats`** („Meine
 Stats") an. Das entspricht dem Projektantrag (REST-API zwischen Agent und
 Webplattform) und funktioniert auch bei gehosteter Website.
@@ -252,8 +259,9 @@ das Publish-Skript [`publish.ps1`](publish.ps1) legt das ZIP nach
 - Optional: korrupte Ergebnisdateien (abgebrochene Schreibvorgänge) toleranter
   behandeln, statt sie zu überspringen.
 - **EF-Migrationen** statt `EnsureCreated`, sobald sich das Schema stabilisiert.
-- Optional: interaktiver Pfad-Picker (Installer/Tray-App) statt reiner
-  Konfiguration.
+- Optional: Tray-Menü um „Jetzt aktualisieren" und Status-/Pfad-Anzeige erweitern;
+  echtes Icon statt System-Standardicon.
+- API-Key (`Website:ApiKey`) aus den Dev-Defaults in ein Secret ziehen.
 
 ## 📝 Lizenz
 
