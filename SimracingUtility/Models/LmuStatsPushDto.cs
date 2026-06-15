@@ -37,4 +37,18 @@ namespace SimracingUtility.Models
         public string Name { get; set; } = string.Empty;
         public int RacesShared { get; set; }
     }
+
+    // Antwort der Lese-API (GET /api/lmu/stats). Bewusst host-agnostisch: ein
+    // fremdes Frontend kann damit das Dashboard rendern, ohne die Razor-Views.
+    public class LmuStatsResponseDto
+    {
+        public string OwnerKey { get; set; } = string.Empty;
+        public string DriverName { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
+        public CategoryStatsDto Sprint { get; set; } = new();
+        public CategoryStatsDto Endurance { get; set; } = new();
+        public List<TrackBestDto> BestLapsByTrack { get; set; } = new();
+        public List<RacedWithDto> MostRacedWith { get; set; } = new();
+        public List<RacedWithDto> MostRacedAgainstTeams { get; set; } = new();
+    }
 }

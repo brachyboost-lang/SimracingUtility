@@ -10,6 +10,14 @@ namespace SimracingUtility.Models
     {
         public int Id { get; set; }
 
+        /// <summary>
+        /// Vom Host-/Login-System vergebener Nutzer-Identifier. Über diesen ordnet
+        /// das einbindende System die Stats seinen Accounts zu. Leer = Einzelnutzer-
+        /// /Entwicklungsmodus (Zuordnung dann über <see cref="DriverName"/>).
+        /// </summary>
+        [StringLength(200)]
+        public string OwnerKey { get; set; } = string.Empty;
+
         [Required]
         [StringLength(150)]
         public string DriverName { get; set; } = string.Empty;

@@ -46,6 +46,12 @@ public class StatsPushClient
             {
                 request.Headers.Add("X-Api-Key", apiKey);
             }
+            // Optionaler Host-Nutzer-Identifier zur Zuordnung im einbindenden System.
+            var userKey = _config["Lmu:UserKey"];
+            if (!string.IsNullOrWhiteSpace(userKey))
+            {
+                request.Headers.Add("X-User-Key", userKey);
+            }
 
             using var response = await _http.SendAsync(request, ct);
             if (response.IsSuccessStatusCode)

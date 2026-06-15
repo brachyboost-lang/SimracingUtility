@@ -81,7 +81,11 @@ namespace SimracingUtility.Data
             {
                 b.HasKey(x => x.Id);
                 b.Property(x => x.DriverName).IsRequired().HasMaxLength(150);
-                b.HasIndex(x => x.DriverName).IsUnique();
+                b.Property(x => x.OwnerKey).HasMaxLength(200);
+                // Nicht eindeutig auf DriverName: bei Mehrbenutzer kann derselbe
+                // In-Game-Name vorkommen; die Zuordnung erfolgt über OwnerKey.
+                b.HasIndex(x => x.OwnerKey);
+                b.HasIndex(x => x.DriverName);
 
                 b.HasMany(x => x.Categories)
                     .WithOne(c => c.Driver)

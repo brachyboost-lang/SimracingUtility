@@ -107,6 +107,10 @@ Existiert der Ordner nicht, wird eine Warnung protokolliert und der Lauf
 **Eigener Fahrername** (optional): `Lmu:DriverName` setzen, um den Besitzer
 eindeutig festzulegen. Leer = automatisch der Fahrer mit den meisten Ergebnissen.
 
+**Host-Nutzer-Identifier** (für die Einbindung in ein bestehendes System):
+`Lmu:UserKey` wird als Header `X-User-Key` mitgesendet, damit die Website die
+Stats dem richtigen Account zuordnet. Details: [INTEGRATION.md](../INTEGRATION.md).
+
 ### Push an die Website
 
 Damit der Dienst die Statistiken an die SimracingUtility-Website sendet, im

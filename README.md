@@ -175,8 +175,13 @@ an die Website; diese speichert sie in PostgreSQL und zeigt sie an.
 
 | Route | Zweck |
 |-------|-------|
-| `POST /api/lmu/stats` | Ingest-Endpunkt; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key` muss `Lmu:IngestApiKey` entsprechen) |
-| `/LmuStats` | „Meine Stats": getrennte **Sprint-/Endurance**-KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position), **beste Runde je Strecke** (mit Telemetrie-Download), **„Am meisten gefahren mit"** und **häufigste gegnerische custom Teams** |
+| `POST /api/lmu/stats` | Ingest; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key`; optional `X-User-Key` = Host-Nutzer-Identifier) |
+| `GET /api/lmu/stats?owner=&driver=` | **JSON-Lese-API** für ein beliebiges Frontend (host-agnostisch) |
+| `/LmuStats` | „Meine Stats" (Razor-Demo): Sprint-/Endurance-KPIs, beste Runde je Strecke (mit Telemetrie-Download), Mitstreiter und gegnerische custom Teams |
+
+> **Integration in ein bestehendes System:** siehe [INTEGRATION.md](INTEGRATION.md).
+> Die Stats werden über `OwnerKey` (Header `X-User-Key`) einem Host-Nutzer
+> zugeordnet; Login und Views hier sind nur Entwicklungs-Platzhalter.
 
 Datenmodell: `LmuDriver` (ein Datensatz je Fahrer, Upsert beim Push) mit
 `LmuCategoryStat` (Sprint/Endurance), `LmuTrackBest` (beste Runde je Strecke) und
