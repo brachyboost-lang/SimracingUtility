@@ -10,6 +10,9 @@ Eine ASP.NET-Core-Webanwendung für Sim-Racing mit zwei Kernbereichen:
    verwalten und teilen; die Übersicht ist öffentlich, der Download nur für
    angemeldete Nutzer.
 
+Zusätzlich wird der **LMU-Agent** – ein eigenständiges Begleitprojekt – über die
+Website zum Download bereitgestellt (siehe [LMU-Agent (Download)](#lmu-agent-download)).
+
 ## Funktionsumfang
 
 - **Spritrechner** – Eingabe von Strecke, Renndauer, Verbrauch/Runde, Rundenzeit,
@@ -26,6 +29,8 @@ Eine ASP.NET-Core-Webanwendung für Sim-Racing mit zwei Kernbereichen:
   Details siehe Abschnitt [Setup-Hub](#setup-hub).
 - **Benutzerverwaltung** – ASP.NET Core Identity (Registrierung/Login) ist
   eingebunden.
+- **LMU-Agent-Download** – die Startseite und der Menüpunkt „LMU-Agent" führen zu
+  einer Download-Seite für den lokalen Le-Mans-Ultimate-Dienst.
 
 ## Technologie-Stack
 
@@ -44,6 +49,7 @@ Eine ASP.NET-Core-Webanwendung für Sim-Racing mit zwei Kernbereichen:
 | `SimracingUtility/Controllers/FuelCalcController.cs` | Spritrechner: Anzeige, Speichern, AJAX-Endpunkt `Calculate` |
 | `SimracingUtility/Controllers/HomeController.cs` | Startseite & Fehlerseite |
 | `SimracingUtility/Controllers/SetupController.cs` | **Setup-Hub**: Index/Upload/Download/Delete + JSON-Endpunkte `Cars`/`Tracks` |
+| `SimracingUtility/Controllers/DownloadController.cs` | **LMU-Agent-Download**: Landing-Page + Auslieferung des Agent-ZIP |
 | `SimracingUtility/Models/FuelCalcViewModel.cs` | Eingabe-/Ergebnismodell **inkl. Berechnungslogik** (`CalculateFuel`) |
 | `SimracingUtility/Models/RecentFuelCalculation.cs` | EF-Entität, gemappt auf Tabelle `FuelCalc` |
 | `SimracingUtility/Models/Setup.cs` | EF-Entität eines Setups (Datei als `bytea`, FKs zu User/Auto/Strecke) |
@@ -133,6 +139,29 @@ wobei `cars`/`tracks` jeweils Objekte mit `id` (Slug) und `name` sind.
 - [`wwwroot/js/setup-hub.js`](SimracingUtility/wwwroot/js/setup-hub.js) – lädt bei
   Änderung der Simulation Auto-/Streckenliste per `fetch` nach
   (gesteuert über `data-`-Attribute, wiederverwendbar für Formular und Filter).
+
+## LMU-Agent (Download)
+
+Der **LMU-Agent** ist ein eigenständiges Projekt im Ordner
+[`LMU_Agent/`](LMU_Agent/README.md) mit eigener Dokumentation. Die Website bindet
+ihn nur über einen Download ein:
+
+| Route | Zweck |
+|-------|-------|
+| `/Download` | Landing-Page mit Beschreibung und Installationsanleitung |
+| `/Download/Agent` | Auslieferung des Agent-ZIP (`application/zip`) |
+
+Das ausgelieferte ZIP liegt unter `wwwroot/downloads/LMU.Agent.Service.zip` und
+wird **nicht eingecheckt**, sondern vom Publish-Skript des Agents erzeugt:
+
+```powershell
+# im Ordner LMU_Agent
+pwsh ./publish.ps1
+```
+
+Das Skript baut den Dienst self-contained und legt das ZIP direkt im
+Download-Ordner der Website ab. Fehlt das Artefakt, zeigt die Seite einen Hinweis
+statt eines toten Links.
 
 ## Lokal starten
 
