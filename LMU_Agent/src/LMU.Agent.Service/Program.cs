@@ -1,30 +1,43 @@
 using LMU.Agent.Core.Data;
 using LMU.Agent.Core.Services;
 using LMU.Agent.Service;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-var builder = Host.CreateApplicationBuilder(args);
+namespace LMU.Agent.Service;
 
-// Als Windows-Dienst lauffähig (und weiterhin als Konsole startbar zum Debuggen)
-builder.Services.AddWindowsService(options =>
+internal static class Program
 {
-    options.ServiceName = "LMU Agent";
-});
+    [STAThread]
+    private static void Main(string[] args)
+    {
+        ApplicationConfiguration.Initialize();
 
-// EF-Core-Kontext (SQLite wird via OnConfiguring in LMUAgentContext gesetzt)
-builder.Services.AddScoped<LMUAgentContext>();
+        // Hintergrund-Host: Erfassung + Push (Worker).
+        var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.AddScoped<LMUAgentContext>();
+        builder.Services.AddScoped<IEventParser, EventParser>();
+        builder.Services.AddScoped<IRaceResultParser, RaceResultParser>();
+        builder.Services.AddScoped<IDriverProfileParser, DriverProfileParser>();
+        builder.Services.AddScoped<IStatisticsParser, StatisticsParser>();
+        builder.Services.AddHttpClient<StatsPushClient>();
+        builder.Services.AddHostedService<Worker>();
 
-// Core-Parser registrieren
-builder.Services.AddScoped<IEventParser, EventParser>();
-builder.Services.AddScoped<IRaceResultParser, RaceResultParser>();
-builder.Services.AddScoped<IDriverProfileParser, DriverProfileParser>();
-builder.Services.AddScoped<IStatisticsParser, StatisticsParser>();
+        var host = builder.Build();
+        host.Start();
 
-// HTTP-Client für den Stats-Push an die Website.
-builder.Services.AddHttpClient<StatsPushClient>();
+        // Lokaler Telemetrie-Download-Server.
+        var config = host.Services.GetRequiredService<IConfiguration>();
+        var resultsPath = LmuPathResolver.ResolveResultsPath(config["Lmu:ResultsPath"]);
+        var port = int.TryParse(config["Telemetry:Port"], out var p) ? p : 5601;
 
-builder.Services.AddHostedService<Worker>();
+        var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+        var telemetry = new TelemetryServer(port, resultsPath, loggerFactory.CreateLogger("Telemetry"));
+        telemetry.Start();
 
-var host = builder.Build();
-host.Run();
+        // Tray-Oberfläche (blockiert bis "Beenden").
+        Application.Run(new TrayAppContext(host, telemetry, resultsPath));
+    }
+}

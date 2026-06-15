@@ -73,15 +73,27 @@ else
             }
             else
             {
+                var telBase = (ViewBag.TelemetryBase as string ?? "http://localhost:5601").TrimEnd('/');
                 <table class="table table-sm table-striped">
-                    <thead><tr><th>Strecke</th><th class="text-end">Beste Runde</th></tr></thead>
+                    <thead><tr><th>Strecke</th><th class="text-end">Beste Runde</th><th class="text-end">Telemetrie</th></tr></thead>
                     <tbody>
                     @foreach (var t in Model.TrackBests.OrderBy(t => t.Track))
                     {
-                        <tr><td>@t.Track</td><td class="text-end">@Lap(t.BestLapTime)</td></tr>
+                        <tr>
+                            <td>@t.Track</td>
+                            <td class="text-end">@Lap(t.BestLapTime)</td>
+                            <td class="text-end">
+                                <a href="@(telBase)/telemetry?track=@Uri.EscapeDataString(t.Track)"
+                                   title="ld + ldx als ZIP (erfordert laufenden LMU-Agent)">⬇ .zip</a>
+                            </td>
+                        </tr>
                     }
                     </tbody>
                 </table>
+                <p class="text-muted small mb-0">
+                    Telemetrie-Downloads werden vom lokal laufenden LMU-Agent
+                    bereitgestellt (.ld + .ldx zusammen gezippt).
+                </p>
             }
         </div>
         <div class="col-lg-5">
