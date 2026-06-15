@@ -98,6 +98,22 @@ Der Ergebnis-Ordner wird in dieser Reihenfolge bestimmt:
 Existiert der Ordner nicht, protokolliert der Dienst eine Warnung mit Anleitung
 und überspringt den Lauf (kein Absturz).
 
+### Push an die Website
+
+Damit der Dienst die Statistiken an die SimracingUtility-Website sendet, im
+Abschnitt `Website` setzen (oder per Umgebungsvariablen `Website__BaseUrl` /
+`Website__ApiKey`):
+
+```json
+"Website": {
+  "BaseUrl": "http://localhost:5279",
+  "ApiKey": "dev-local-key"
+}
+```
+
+Ist `BaseUrl` leer, wird der Push übersprungen. Der `ApiKey` muss mit
+`Lmu:IngestApiKey` der Website übereinstimmen.
+
 ## 🗄️ Datenbank
 
 **SQLite** als lokale Datei-Datenbank unter
@@ -204,11 +220,21 @@ dotnet test tests/LMU.Agent.Tests/LMU.Agent.Tests.csproj
 
 ## Integration mit der Website
 
-Die SimracingUtility-Website bietet den Agent unter **`/Download`** an. Das
-Publish-Skript [`publish.ps1`](publish.ps1) legt das ZIP nach
-`../SimracingUtility/wwwroot/downloads/LMU.Agent.Service.zip`; der
-`DownloadController` der Website liefert es von dort aus. Das ZIP selbst wird
-nicht eingecheckt – es entsteht beim Veröffentlichen.
+**Datenfluss (Push).** Nach jeder Erfassung berechnet der Dienst das
+Nutzer-Dashboard (eigene Statistik + häufigste Teamkollegen/Gegner) und sendet es
+per `POST {Website:BaseUrl}/api/lmu/stats` (Header `X-Api-Key`) an die Website.
+Diese speichert es in PostgreSQL und zeigt es unter **`/LmuStats`** („Meine
+Stats") an. Das entspricht dem Projektantrag (REST-API zwischen Agent und
+Webplattform) und funktioniert auch bei gehosteter Website.
+
+**Download.** Die Website bietet den Agent zusätzlich unter **`/Download`** an;
+das Publish-Skript [`publish.ps1`](publish.ps1) legt das ZIP nach
+`../SimracingUtility/wwwroot/downloads/LMU.Agent.Service.zip`.
+
+> **Hinweis:** Seit der Push-Integration ist das Projekt **`LMU.Agent.UI`**
+> (eigene REST-API + `/stats`-Seite) für das Produkt nicht mehr nötig – die
+> Anzeige liegt jetzt in der MVC-Website. Es bleibt vorerst als optionale lokale
+> API/Debug-Oberfläche erhalten und kann später entfernt werden.
 
 ## Offene Punkte
 

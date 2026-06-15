@@ -31,6 +31,9 @@ Website zum Download bereitgestellt (siehe [LMU-Agent (Download)](#lmu-agent-dow
   eingebunden.
 - **LMU-Agent-Download** – die Startseite und der Menüpunkt „LMU-Agent" führen zu
   einer Download-Seite für den lokalen Le-Mans-Ultimate-Dienst.
+- **Meine LMU-Statistiken** – der Agent pusht die Renndaten des Nutzers per REST;
+  die Seite „Meine Stats" zeigt P1/Podium/Top 5/10/50 %/DNF sowie die häufigsten
+  Teamkollegen und Gegner.
 
 ## Technologie-Stack
 
@@ -50,6 +53,8 @@ Website zum Download bereitgestellt (siehe [LMU-Agent (Download)](#lmu-agent-dow
 | `SimracingUtility/Controllers/HomeController.cs` | Startseite & Fehlerseite |
 | `SimracingUtility/Controllers/SetupController.cs` | **Setup-Hub**: Index/Upload/Download/Delete + JSON-Endpunkte `Cars`/`Tracks` |
 | `SimracingUtility/Controllers/DownloadController.cs` | **LMU-Agent-Download**: Landing-Page + Auslieferung des Agent-ZIP |
+| `SimracingUtility/Controllers/LmuStatsApiController.cs` | **Ingest-API** (`POST /api/lmu/stats`): empfängt die Agent-Statistiken |
+| `SimracingUtility/Controllers/LmuStatsController.cs` | **Meine Stats** (`/LmuStats`): Anzeige der gepushten Statistiken |
 | `SimracingUtility/Models/FuelCalcViewModel.cs` | Eingabe-/Ergebnismodell **inkl. Berechnungslogik** (`CalculateFuel`) |
 | `SimracingUtility/Models/RecentFuelCalculation.cs` | EF-Entität, gemappt auf Tabelle `FuelCalc` |
 | `SimracingUtility/Models/Setup.cs` | EF-Entität eines Setups (Datei als `bytea`, FKs zu User/Auto/Strecke) |
@@ -162,6 +167,21 @@ pwsh ./publish.ps1
 Das Skript baut den Dienst self-contained und legt das ZIP direkt im
 Download-Ordner der Website ab. Fehlt das Artefakt, zeigt die Seite einen Hinweis
 statt eines toten Links.
+
+## Meine LMU-Statistiken (Agent-Push)
+
+Der lokale Agent berechnet die Renndaten des Nutzers und **pusht** sie per REST
+an die Website; diese speichert sie in PostgreSQL und zeigt sie an.
+
+| Route | Zweck |
+|-------|-------|
+| `POST /api/lmu/stats` | Ingest-Endpunkt; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key` muss `Lmu:IngestApiKey` entsprechen) |
+| `/LmuStats` | „Meine Stats": KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position/Runde) plus „Am meisten mit/gegen" |
+
+Datenmodell: `LmuDriverStats` (ein Datensatz je Fahrer, Upsert beim Push) mit
+zugehörigen `LmuCompanion`-Einträgen (Teamkollege/Gegner). Migration:
+`AddLmuStats`. Der API-Key steht unter `Lmu:IngestApiKey` in
+[`appsettings.json`](SimracingUtility/appsettings.json).
 
 ## Lokal starten
 
