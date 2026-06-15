@@ -143,7 +143,10 @@ Ergebnissen). Wichtige Regeln aus dem Abgleich mit echten Dateien:
   mehrere sichere Signale erkannt und herausgefiltert – ein `TeamName`, der (a)
   von einem KI-Bot gefahren wird, (b) dem Saison-Muster „Jahr + #Startnummer"
   entspricht (z. B. „Akkodis ASP Team 2025 #87"), (c) im selben Rennen von
-  mehreren Fahrern genutzt wird oder (d) insgesamt von ≥ 8 Fahrern. Zusätzlich
+  mehreren Fahrern genutzt wird, (d) insgesamt von ≥ 8 Fahrern oder (e) in der
+  kuratierten Liste offizieller Teamnamen steht
+  ([`StandardTeams`](src/LMU.Agent.Core/Services/StandardTeams.cs), fängt
+  jahrlose Stock-Namen wie „United Autosports #22" ab). Zusätzlich
   zählen nur **echte Teams** (von ≥ 2 verschiedenen Fahrern genutzt), und Namen,
   die bereits unter „Am meisten gefahren mit" stehen, werden nicht doppelt
   gezeigt.

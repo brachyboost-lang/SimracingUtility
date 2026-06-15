@@ -119,6 +119,21 @@ public class DashboardBuilderTests
     }
 
     [Fact]
+    public void Build_OfficialTeamWithoutYear_FilteredViaCuratedList()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Me", "s1"), R("Me", "s2"), R("Me", "s3"),
+            // offizieller Name ohne Jahr, von 2 Fahrern -> nur die Liste fängt ihn
+            R("R1", "s1", team: "United Autosports #22"),
+            R("R6", "s2", team: "United Autosports #22"),
+        };
+
+        var d = DashboardBuilder.Build(rows);
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "United Autosports #22");
+    }
+
+    [Fact]
     public void Build_SingleDriverTeam_NotCountedAsTeam()
     {
         var rows = new List<RaceResult>

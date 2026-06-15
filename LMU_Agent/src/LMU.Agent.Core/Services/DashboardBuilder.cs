@@ -198,6 +198,12 @@ public static class DashboardBuilder
                      .Where(g => g.Select(r => r.DriverName).Distinct().Count() >= 8))
             result.Add(team.Key);
 
+        // (5) bekannter offizieller Teamname (kuratierte Liste) – fängt Stock-
+        //     Liverys ohne Jahr/Startnummer ab, z. B. "United Autosports #22".
+        foreach (var team in named.Select(r => r.TeamName).Distinct())
+            if (StandardTeams.IsOfficial(team))
+                result.Add(team);
+
         return result;
     }
 }
