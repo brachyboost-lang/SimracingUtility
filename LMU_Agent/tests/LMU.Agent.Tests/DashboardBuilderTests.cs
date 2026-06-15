@@ -5,7 +5,7 @@ namespace LMU.Agent.Tests;
 
 public class DashboardBuilderTests
 {
-    private static RaceResult R(string driver, string session, string team)
+    private static RaceResult R(string driver, string session, string team, bool isPlayer = true)
         => new()
         {
             DriverName = driver,
@@ -15,6 +15,7 @@ public class DashboardBuilderTests
             FieldSize = 1,
             FinishStatus = "None",
             RaceDate = new DateTime(2026, 1, 1),
+            IsPlayer = isPlayer,
         };
 
     // Alice ist in 3 Rennen (am meisten -> Besitzer). Bob ist mal Teamkollege,
@@ -53,6 +54,40 @@ public class DashboardBuilderTests
         // Carol (s1) und Bob (s2) fuhren in anderen Autos.
         Assert.Equal(1, d.Opponents.Single(c => c.Name == "Carol").RacesShared);
         Assert.Equal(1, d.Opponents.Single(c => c.Name == "Bob").RacesShared);
+    }
+
+    [Fact]
+    public void Build_ExcludesBotsFromCompanions()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Alice", "s1", "TeamA"),                       // ich (Mensch)
+            R("HumanMate", "s1", "TeamA"),                   // menschlicher Teamkollege
+            R("BotMate", "s1", "TeamA", isPlayer: false),    // KI im selben Auto
+            R("HumanRival", "s1", "TeamB"),                  // menschlicher Gegner
+            R("BotRival", "s1", "TeamC", isPlayer: false),   // KI-Gegner
+            R("Alice", "s2", "TeamA"),                       // damit Alice die meisten hat
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Equal("Alice", d.DriverName);
+        Assert.Contains(d.Teammates, c => c.Name == "HumanMate");
+        Assert.Contains(d.Opponents, c => c.Name == "HumanRival");
+        Assert.DoesNotContain(d.Teammates, c => c.Name == "BotMate");
+        Assert.DoesNotContain(d.Opponents, c => c.Name == "BotRival");
+    }
+
+    [Fact]
+    public void Build_NoHumans_ReturnsEmptyDashboard()
+    {
+        var rows = new List<RaceResult>
+        {
+            R("Bot1", "s1", "T1", isPlayer: false),
+            R("Bot2", "s1", "T2", isPlayer: false),
+        };
+        var d = DashboardBuilder.Build(rows);
+        Assert.Equal(string.Empty, d.DriverName);
     }
 
     [Fact]

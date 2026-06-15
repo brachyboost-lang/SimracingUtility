@@ -44,6 +44,9 @@ public class RaceResult
     public string CarNumber { get; set; } = string.Empty;
     public string CarClass { get; set; } = string.Empty;
 
+    /// <summary>True = menschlicher Fahrer, False = KI-Bot (aus &lt;isPlayer&gt;).</summary>
+    public bool IsPlayer { get; set; }
+
     /// <summary>
     /// True, wenn der Fahrer das Rennen nicht regulär beendet hat. LMU markiert
     /// beendete Rennen mit "None"; alles andere außer "Finished*" gilt als Ausfall.

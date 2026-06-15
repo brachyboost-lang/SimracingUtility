@@ -176,6 +176,7 @@ public class RaceResultParser : IRaceResultParser
                 FinishStatus = driver.Element("FinishStatus")?.Value?.Trim() ?? string.Empty,
                 CarNumber = driver.Element("CarNumber")?.Value?.Trim() ?? string.Empty,
                 CarClass = carClass,
+                IsPlayer = (driver.Element("isPlayer")?.Value?.Trim() ?? "0") == "1",
             });
         }
 

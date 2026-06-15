@@ -13,13 +13,17 @@ public static class DashboardBuilder
     public static UserDashboard Build(IReadOnlyList<RaceResult> all, int topN = 10)
     {
         var dashboard = new UserDashboard();
-        if (all.Count == 0)
+
+        // Nur menschliche Fahrer berücksichtigen – KI-Bots (isPlayer=0) ergeben in
+        // den Mit-/Gegen-Listen keinen Sinn.
+        var humans = all.Where(r => r.IsPlayer).ToList();
+        if (humans.Count == 0)
         {
             return dashboard;
         }
 
-        // Besitzer = Fahrer mit den meisten Ergebnissen.
-        var me = all
+        // Besitzer = menschlicher Fahrer mit den meisten Ergebnissen.
+        var me = humans
             .GroupBy(r => r.DriverName)
             .OrderByDescending(g => g.Count())
             .First().Key;
@@ -45,8 +49,8 @@ public static class DashboardBuilder
                                 .Where(k => !string.IsNullOrWhiteSpace(k))
                                 .ToHashSet();
 
-            // Jeden anderen Fahrer einmal pro Session zählen.
-            foreach (var other in session.Where(r => r.DriverName != me)
+            // Jeden anderen menschlichen Fahrer einmal pro Session zählen (Bots raus).
+            foreach (var other in session.Where(r => r.DriverName != me && r.IsPlayer)
                                          .Select(r => new { r.DriverName, r.CarKey })
                                          .DistinctBy(x => x.DriverName))
             {
