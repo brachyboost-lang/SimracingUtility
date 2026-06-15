@@ -136,3 +136,36 @@ Formular: „… wählen").
 
 ### W7. Stiller Cap auf 200 Setups
 **Fix:** Hinweis in der Übersicht, wenn die Liste auf 200 Einträge begrenzt ist.
+
+## LMU-Statistik: Logikfehler nach Abgleich mit echten Daten
+
+### 17. Falsche „Teamkollegen" (TeamName ist nicht eindeutig)
+**Problem:** Teamkollegen/Gegner wurden über `TeamName`/`VehFile` gruppiert. In
+öffentlichen Lobbies wählen viele Fahrer dieselbe Livery → unbeteiligte Fahrer
+wurden fälschlich als Teamkollegen gezählt. Zudem listen die Ergebnisse **genau
+einen Fahrer pro Auto** (0/313 Rennen mit geteiltem `GridPos`) – Fahrerwechsel/
+Co-Driver sind gar nicht enthalten.
+**Fix:** Teamkollegen-Konzept entfernt (aus den Daten nicht ableitbar). Stattdessen
+**„Am meisten gefahren mit"**: menschliche Fahrer, mit denen man am häufigsten im
+selben Rennen war (gezählt über geteilte Sessions).
+
+### 18. KI-Trainingsrennen verfälschten die Statistik
+**Problem:** Offline-Rennen gegen die KI (Trainingsrennen) flossen in alle
+Kennzahlen ein.
+**Fix:** Jede Session, die einen Bot (`isPlayer=0`) enthält, wird komplett
+ignoriert. Bei den echten Daten sinkt die Rennzahl dadurch von 271 auf 209
+(reine Wettkampfrennen).
+
+### 19. „Fastest Lap" ohne Streckenbezug aussagelos
+**Problem:** Eine einzelne globale Bestzeit über alle Strecken ist sinnlos.
+**Fix:** **Beste Runde je Strecke** als Tabelle (aus `TrackCourse` + `BestLapTime`).
+
+### 20. Sprint und Endurance vermischt
+**Problem:** Kurz- und Langstreckenrennen wurden zusammen gezählt.
+**Fix:** Trennung nach Renndauer (`<Minutes>` ≥ 90 = Endurance); getrennte
+Sprint-/Endurance-Statistik. Ein verlässliches „Team-Event"-Flag gibt es in den
+Daten nicht, daher die Dauer als Kriterium.
+
+### 21. Bot-Filter (Zwischenschritt)
+Der frühere reine Listen-Filter (Bots nur aus Mit-/Gegen-Listen entfernen) wurde
+durch den vollständigen Ausschluss ganzer KI-Sessions (#18) ersetzt.

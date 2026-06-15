@@ -122,12 +122,21 @@ Dienst (Schreiber) und Web-API (Leser) unabhängig vom Arbeitsverzeichnis diesel
 Datenbank verwenden. Das Schema wird beim Start per
 `Database.EnsureCreatedAsync()` angelegt – es gibt (noch) **keine EF-Migrationen**.
 
-### Berechnete Statistiken
+### Berechnetes Nutzer-Dashboard
 
-Pro Fahrer werden aus den Rennergebnissen berechnet: Anzahl Rennen, **P1** (Siege),
-**Podium** (Top 3), **Top 5**, **Top 10**, **Top 50 %** des Feldes, **DNF**, beste
-Position, schnellste Runde und letztes Renndatum. Positionsbasierte Zähler werten
-nur regulär beendete Rennen; DNFs werden separat gezählt.
+Ausgewertet wird **der Besitzer** (menschlicher Fahrer mit den meisten
+Ergebnissen). Wichtige Regeln aus dem Abgleich mit echten Dateien:
+
+- **KI-Rennen sind Trainingsrennen** und werden komplett ignoriert (jede Session
+  mit einem Bot `isPlayer=0`).
+- **Sprint vs. Endurance** getrennt (Renndauer `<Minutes>` ≥ 90 = Endurance), je
+  mit: Rennen, **P1**, **Podium**, **Top 5/10/50 %**, **DNF**, beste Position.
+  Positionen sind **Klassenpositionen** (LMU ist multiclass); DNFs zählen separat.
+- **Beste Runde je Strecke** statt eines globalen Werts.
+- **„Am meisten gefahren mit"**: menschliche Fahrer, mit denen man am häufigsten
+  im selben Rennen war. Echte *Teamkollegen* (Fahrerwechsel) sind nicht ableitbar –
+  die Ergebnisse listen genau einen Fahrer pro Auto, und `TeamName` ist keine
+  eindeutige Auto-Kennung.
 
 ### Idempotentes Schreiben
 

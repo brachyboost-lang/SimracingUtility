@@ -176,11 +176,12 @@ an die Website; diese speichert sie in PostgreSQL und zeigt sie an.
 | Route | Zweck |
 |-------|-------|
 | `POST /api/lmu/stats` | Ingest-Endpunkt; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key` muss `Lmu:IngestApiKey` entsprechen) |
-| `/LmuStats` | „Meine Stats": KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position/Runde) plus „Am meisten mit/gegen" |
+| `/LmuStats` | „Meine Stats": getrennte **Sprint-/Endurance**-KPIs (Rennen, P1, Podium, Top 5/10/50 %, DNF, beste Position), **beste Runde je Strecke** und **„Am meisten gefahren mit"** |
 
-Datenmodell: `LmuDriverStats` (ein Datensatz je Fahrer, Upsert beim Push) mit
-zugehörigen `LmuCompanion`-Einträgen (Teamkollege/Gegner). Migration:
-`AddLmuStats`. Der API-Key steht unter `Lmu:IngestApiKey` in
+Datenmodell: `LmuDriver` (ein Datensatz je Fahrer, Upsert beim Push) mit
+`LmuCategoryStat` (Sprint/Endurance), `LmuTrackBest` (beste Runde je Strecke) und
+`LmuRacedWith` (häufigste menschliche Mitstreiter). KI-Trainingsrennen werden
+ausgeschlossen. Der API-Key steht unter `Lmu:IngestApiKey` in
 [`appsettings.json`](SimracingUtility/appsettings.json).
 
 ## Lokal starten
