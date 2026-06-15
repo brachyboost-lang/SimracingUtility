@@ -137,8 +137,41 @@ als 200 (gefilterte) Setups existieren, fehlen ältere Einträge unbemerkt.
 
 ---
 
+# LMU-Agent / Statistik-Integration (bewusst offene Punkte)
+
+Diese Punkte sind **absichtlich offen** und für die Übergabe dokumentiert.
+
+## A. Stats nicht an ein Login gebunden
+`/LmuStats` zeigt den zuletzt gepushten bzw. per `?owner=` gewählten Fahrer; es gibt
+keine Bindung an einen eingeloggten Account. **Begründung:** Login/Views sind
+Platzhalter fürs spätere Fremdsystem. Die Naht ist vorhanden (`OwnerKey` /
+Header `X-User-Key`, siehe [INTEGRATION.md](INTEGRATION.md)) – das Host-System bindet
+es an seine Nutzer.
+
+## B. Ingest-Sicherheit (nur Dev)
+Geteilter API-Key (`Lmu:IngestApiKey`, Default `dev-local-key`), kein HTTPS erzwungen,
+`X-User-Key` wird nicht validiert. **Vor produktivem Hosting:** echtes Secret, HTTPS,
+`X-User-Key` gegen den eigenen User-Store prüfen.
+
+## C. Telemetrie-Download nur same-machine
+Der Link zeigt auf den lokal laufenden Agent (`localhost:5601`). Für ein zentral
+gehostetes Portal müsste der Agent die ZIPs aktiv hochladen statt lokal zu servieren.
+
+## D. Kuratierte Team-Liste pflegebedürftig
+Reale Teamnamen **ohne** Jahr/Startnummer (z. B. „RLR MSport #15"), die nicht in
+[`StandardTeams`](LMU_Agent/src/LMU.Agent.Core/Services/StandardTeams.cs) stehen,
+werden nicht als Stock-Livery erkannt. Bei Bedarf dort ergänzen. Saison-Varianten
+mit Jahr+Nummer werden automatisch über das Muster erkannt.
+
+## E. Event-/DriverProfile-Parser sind Platzhalter
+Unverifiziertes Schema, vom Agent nicht aktiv genutzt. Entweder gegen echte Quellen
+verifizieren oder entfernen.
+
+---
+
 **Fazit:** Der Rechenkern ist solide und durch Unit-Tests abgedeckt. Beim
 Spritrechner ist **#1** der einzige direkt sichtbare Fehler, **#2** der relevanteste
 für die Datenqualität. Im Setup-Hub ist **#5** der wichtigste Punkt (vermeidbare
 Last durch Laden der Dateibytes in der Übersicht); der Rest ist kosmetisch bzw.
-betrieblich.
+betrieblich. Beim LMU-Agent sind alle offenen Punkte (A–E) bewusst gewählt und
+oben begründet.
