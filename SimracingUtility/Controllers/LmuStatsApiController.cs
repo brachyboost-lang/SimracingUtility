@@ -69,7 +69,11 @@ namespace SimracingUtility.Controllers
             }
             foreach (var r in dto.MostRacedWith)
             {
-                driver.RacedWith.Add(new LmuRacedWith { Name = r.Name, RacesShared = r.RacesShared });
+                driver.RacedWith.Add(new LmuRacedWith { Name = r.Name, RacesShared = r.RacesShared, Kind = "Driver" });
+            }
+            foreach (var t in dto.MostRacedAgainstTeams)
+            {
+                driver.RacedWith.Add(new LmuRacedWith { Name = t.Name, RacesShared = t.RacesShared, Kind = "Team" });
             }
 
             await _db.SaveChangesAsync();

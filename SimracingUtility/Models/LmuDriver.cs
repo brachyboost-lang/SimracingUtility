@@ -57,7 +57,8 @@ namespace SimracingUtility.Models
         public double BestLapTime { get; set; }
     }
 
-    /// <summary>Menschlicher Fahrer und Anzahl gemeinsamer Rennen.</summary>
+    /// <summary>Menschlicher Mitstreiter ("Driver") oder gegnerisches custom Team
+    /// ("Team") und Anzahl gemeinsamer Rennen.</summary>
     public class LmuRacedWith
     {
         public int Id { get; set; }
@@ -67,6 +68,11 @@ namespace SimracingUtility.Models
         [Required]
         [StringLength(150)]
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>"Driver" (Mitstreiter) oder "Team" (gegnerisches custom Team).</summary>
+        [Required]
+        [StringLength(20)]
+        public string Kind { get; set; } = "Driver";
 
         public int RacesShared { get; set; }
     }

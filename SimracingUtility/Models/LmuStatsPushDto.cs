@@ -10,6 +10,7 @@ namespace SimracingUtility.Models
         public CategoryStatsDto Endurance { get; set; } = new();
         public List<TrackBestDto> BestLapsByTrack { get; set; } = new();
         public List<RacedWithDto> MostRacedWith { get; set; } = new();
+        public List<RacedWithDto> MostRacedAgainstTeams { get; set; } = new();
     }
 
     public class CategoryStatsDto

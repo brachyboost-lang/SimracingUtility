@@ -48,6 +48,7 @@ public static class DashboardBuilder
         dashboard.Endurance = ComputeCategory(myResults.Where(r => r.IsEndurance));
         dashboard.BestLapsByTrack = BestLapsByTrack(myResults);
         dashboard.MostRacedWith = MostRacedWith(competitive, myResults, me, topN);
+        dashboard.MostRacedAgainstTeams = MostRacedAgainstTeams(all, competitive, myResults, me, topN);
         return dashboard;
     }
 
@@ -104,4 +105,48 @@ public static class DashboardBuilder
             .Take(topN)
             .ToList();
     }
+
+    private static List<CompanionCount> MostRacedAgainstTeams(
+        IReadOnlyList<RaceResult> all, List<RaceResult> competitive,
+        List<RaceResult> myResults, string me, int topN)
+    {
+        var standard = StandardLiveries(all);
+        var myTeams = myResults
+            .Select(r => r.TeamName)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var mySessions = myResults.Select(r => r.SessionId).ToHashSet();
+
+        return competitive
+            .Where(r => r.DriverName != me && mySessions.Contains(r.SessionId))
+            .Where(r => !string.IsNullOrWhiteSpace(r.TeamName)
+                        && !standard.Contains(r.TeamName)
+                        && !myTeams.Contains(r.TeamName))
+            .GroupBy(r => r.TeamName)
+            .Select(g => new CompanionCount
+            {
+                Name = g.Key,
+                RacesShared = g.Select(r => r.SessionId).Distinct().Count()
+            })
+            .OrderByDescending(c => c.RacesShared)
+            .ThenBy(c => c.Name)
+            .Take(topN)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Standard-/Default-Liverys: ein TeamName, der in irgendeinem Rennen von
+    /// mehreren verschiedenen Fahrern verwendet wird (kann also kein echtes Team
+    /// sein – jeder fährt sein eigenes Auto). Custom-Teamnamen sind je Rennen
+    /// eindeutig.
+    /// </summary>
+    private static HashSet<string> StandardLiveries(IReadOnlyList<RaceResult> all)
+        => all
+            .Where(r => !string.IsNullOrWhiteSpace(r.TeamName))
+            .GroupBy(r => r.SessionId)
+            .SelectMany(session => session
+                .GroupBy(r => r.TeamName)
+                .Where(g => g.Select(x => x.DriverName).Distinct().Count() >= 2)
+                .Select(g => g.Key))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 }

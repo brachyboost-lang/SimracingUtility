@@ -6,7 +6,7 @@ namespace LMU.Agent.Tests;
 public class DashboardBuilderTests
 {
     private static RaceResult R(string driver, string session, int pos = 1, int field = 10,
-        bool human = true, int minutes = 20, string track = "Monza", double lap = 0)
+        bool human = true, int minutes = 20, string track = "Monza", double lap = 0, string team = "")
         => new()
         {
             DriverName = driver,
@@ -17,6 +17,7 @@ public class DashboardBuilderTests
             RaceMinutes = minutes,
             TrackName = track,
             BestLapTime = lap,
+            TeamName = team,
             FinishStatus = "None",
             RaceDate = new DateTime(2026, 1, 1),
         };
@@ -92,6 +93,31 @@ public class DashboardBuilderTests
 
         Assert.Equal(98.0, d.BestLapsByTrack.Single(t => t.Track == "Monza").BestLapTime, 3);
         Assert.Equal(120.0, d.BestLapsByTrack.Single(t => t.Track == "Spa").BestLapTime, 3);
+    }
+
+    [Fact]
+    public void Build_MostRacedAgainstTeams_ExcludesStandardLiveriesAndOwnTeam()
+    {
+        var rows = new List<RaceResult>
+        {
+            // s1: Standard-Livery "Default GT3" von zwei Fahrern -> wird gefiltert
+            R("Me", "s1", team: "MyTeam"),
+            R("R1", "s1", team: "Custom A"),
+            R("R2", "s1", team: "Default GT3"),
+            R("R3", "s1", team: "Default GT3"),
+            // s2: Custom A erneut -> 2 gemeinsame Sessions
+            R("Me", "s2", team: "MyTeam"),
+            R("R1", "s2", team: "Custom A"),
+            // s4 nur damit "Me" die meisten Ergebnisse hat
+            R("Me", "s4", team: "MyTeam"),
+        };
+
+        var d = DashboardBuilder.Build(rows);
+
+        Assert.Equal("Me", d.DriverName);
+        Assert.Equal(2, d.MostRacedAgainstTeams.Single(t => t.Name == "Custom A").RacesShared);
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "Default GT3"); // Standard
+        Assert.DoesNotContain(d.MostRacedAgainstTeams, t => t.Name == "MyTeam");      // eigenes Team
     }
 
     [Fact]

@@ -40,4 +40,7 @@ public class UserDashboard
     public CategoryStats Endurance { get; set; } = new();
     public List<TrackBestLap> BestLapsByTrack { get; set; } = new();
     public List<CompanionCount> MostRacedWith { get; set; } = new();
+
+    /// <summary>Häufigste gegnerische <b>custom</b> Teams (Standard-Liverys herausgefiltert).</summary>
+    public List<CompanionCount> MostRacedAgainstTeams { get; set; } = new();
 }

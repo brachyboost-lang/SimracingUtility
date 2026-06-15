@@ -85,19 +85,41 @@ else
             }
         </div>
         <div class="col-lg-5">
+            @{
+                var mates = Model.RacedWith.Where(r => r.Kind == "Driver").OrderByDescending(r => r.RacesShared).ToList();
+                var teams = Model.RacedWith.Where(r => r.Kind == "Team").OrderByDescending(r => r.RacesShared).ToList();
+            }
             <h3 class="h5">Am meisten gefahren mit</h3>
-            @if (Model.RacedWith.Count == 0)
+            @if (mates.Count == 0)
             {
                 <p class="text-muted">Keine Mitstreiter erfasst.</p>
             }
             else
             {
-                <ul class="list-group">
-                    @foreach (var r in Model.RacedWith.OrderByDescending(r => r.RacesShared))
+                <ul class="list-group mb-4">
+                    @foreach (var r in mates)
                     {
                         <li class="list-group-item d-flex justify-content-between">
                             <span>@r.Name</span>
                             <span class="badge text-bg-primary rounded-pill">@r.RacesShared</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <h3 class="h5">Häufigste gegnerische Teams</h3>
+            @if (teams.Count == 0)
+            {
+                <p class="text-muted">Keine custom Teams erfasst.</p>
+            }
+            else
+            {
+                <ul class="list-group">
+                    @foreach (var r in teams)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@r.Name</span>
+                            <span class="badge text-bg-secondary rounded-pill">@r.RacesShared</span>
                         </li>
                     }
                 </ul>
