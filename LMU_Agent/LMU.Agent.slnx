@@ -4,4 +4,7 @@
     <Project Path="src/LMU.Agent.Service/LMU.Agent.Service.csproj" />
     <Project Path="src/LMU.Agent.UI/LMU.Agent.UI.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LMU.Agent.Tests/LMU.Agent.Tests.csproj" />
+  </Folder>
 </Solution>
