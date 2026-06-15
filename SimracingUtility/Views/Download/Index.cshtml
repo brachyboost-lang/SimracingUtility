@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "LMU-Agent herunterladen";
+    var agentAvailable = ViewBag.AgentAvailable as bool? ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">LMU-Agent</h1>
+    @if (agentAvailable)
+    {
+        <a asp-action="Agent" class="btn btn-primary">Agent herunterladen (.zip)</a>
+    }
+    else
+    {
+        <button class="btn btn-secondary" disabled>Aktuell nicht verfügbar</button>
+    }
+</div>
+
+@if (TempData["DownloadMessage"] != null)
+{
+    <div class="alert alert-warning">@TempData["DownloadMessage"]</div>
+}
+
+<p class="lead">
+    Der LMU-Agent ist ein lokaler Windows-Dienst, der Renndaten direkt aus
+    <strong>Le Mans Ultimate</strong> ausliest und für die Team-Webseite bereitstellt.
+</p>
+
+<div class="row g-4 mt-1">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Was der Agent macht</h5>
+                <ul class="mb-0">
+                    <li>Liest <strong>Events</strong>, <strong>Rennergebnisse</strong> und
+                        <strong>Fahrerprofile</strong> aus den lokalen LMU-Dateien.</li>
+                    <li>Berechnet Fahrer-<strong>Statistiken</strong> (Siege, Podien, beste Runde …).</li>
+                    <li>Stellt alles über eine lokale <strong>REST-API</strong> bereit.</li>
+                    <li>Läuft als <strong>Windows-Dienst</strong> im Hintergrund und aktualisiert
+                        die Daten regelmäßig.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Installation</h5>
+                <ol class="mb-0">
+                    <li>ZIP herunterladen und entpacken.</li>
+                    <li>PowerShell <strong>als Administrator</strong> öffnen.</li>
+                    <li>Dienst registrieren und starten:
+                        <pre class="bg-light p-2 mt-2 mb-0"><code>sc create "LMU Agent" binPath= "C:\Pfad\LMU.Agent.Service.exe"
+sc start "LMU Agent"</code></pre>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4 mb-0">
+    Voraussetzung: Windows mit installiertem Le&nbsp;Mans&nbsp;Ultimate. Der Agent
+    benötigt keine Internetverbindung – er arbeitet rein lokal.
+</div>

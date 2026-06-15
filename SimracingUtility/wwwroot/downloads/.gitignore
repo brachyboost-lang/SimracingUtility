@@ -1,0 +1,4 @@
+# Das gebaute Agent-Artefakt wird nicht eingecheckt (per publish.ps1 erzeugt),
+# der Ordner selbst bleibt aber erhalten.
+*
+!.gitignore
