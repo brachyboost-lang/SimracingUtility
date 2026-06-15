@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LMU.Agent.Core/LMU.Agent.Core.csproj" />
+    <Project Path="src/LMU.Agent.Service/LMU.Agent.Service.csproj" />
+    <Project Path="src/LMU.Agent.UI/LMU.Agent.UI.csproj" />
+  </Folder>
+</Solution>

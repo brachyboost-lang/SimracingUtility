@@ -1,0 +1,6 @@
+@LMU.Agent.UI_HostAddress = http://localhost:5210
+
+GET {{LMU.Agent.UI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
