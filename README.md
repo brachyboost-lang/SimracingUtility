@@ -79,15 +79,20 @@ Website zum Download bereitgestellt (siehe [LMU-Agent (Download)](#lmu-agent-dow
 ## Die Berechnung
 
 Die Logik in `FuelCalcViewModel.CalculateFuel()` löst ein zirkuläres Problem
-(Boxenstopps kosten Zeit → weniger Runden → weniger Sprit → evtl. weniger Stopps)
-**iterativ**:
+(Boxenstopps kosten Streckenzeit → weniger Runden → weniger Sprit → evtl. weniger
+Stopps) per **direkter Rennsimulation** – das Rennen wird Runde für Runde nachgefahren:
 
-1. Verfügbare Rennzeit = Renndauer − bisherige Stopps × (Boxenzeit + Durchfahrtszeit)
-2. Runden = verfügbare Zeit ÷ Rundenzeit; Sprit = Runden × Verbrauch/Runde
-3. Benötigte Boxenstopps = ⌈Sprit ÷ Tankgröße⌉ − 1
-4. Wiederholen, bis sich der Spritwert stabilisiert (max. 40 Iterationen)
+1. Start mit vollem Tank und der vollen Renndauer als Restzeit.
+2. Solange noch Rennzeit übrig ist, wird eine Runde gefahren (Restzeit − Rundenzeit,
+   Tank − Verbrauch/Runde). Eine im Rennen begonnene Runde zählt voll → ganze Runden.
+3. Reicht der Tank nicht für die nächste Runde, wird vorher getankt (Restzeit −
+   Boxenzeit − Durchfahrtszeit, ein Boxenstopp mehr) – aber nur, wenn danach noch Zeit
+   für mindestens eine Runde bleibt (kein „Phantom-Stopp" am Rennende).
+4. Ergebnis: gefahrene Runden, Boxenstopps und Gesamtsprit (= Runden × Verbrauch).
 
-Bei ungültigen Eingaben (Rundenzeit oder Tankgröße ≤ 0) werden alle Ergebnisse auf 0 gesetzt.
+Das koppelt Runden und Boxenstopps exakt und ist deterministisch (kein Pendeln im
+Tank-Grenzfall). Bei ungültigen Eingaben (Rundenzeit oder Tankgröße ≤ 0) werden alle
+Ergebnisse auf 0 gesetzt.
 
 ## Setup-Hub
 

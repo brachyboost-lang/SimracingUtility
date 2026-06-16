@@ -2,9 +2,9 @@
 
 Ergebnis einer Logik-Analyse des Projekts. Sortiert nach Schweregrad.
 
-> **Stand:** Die Punkte **#1, #2, #5, #6 und #7 sind behoben** – Details in
-> [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md). Offen bleiben die
-> Modellierungsfragen **#3** und **#4** sowie die Betriebshinweise unter **#8**.
+> **Stand:** Die Punkte **#1–#7 sind behoben** – Details in
+> [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md). Offen bleiben nur noch die
+> Betriebshinweise unter **#8**.
 
 ## 1. Spalten vertauscht in AJAX-Zeilen (sicher) — ✅ BEHOBEN
 
@@ -49,7 +49,7 @@ faktisch nie — leere/ungültige Berechnungen werden in die Datenbank geschrieb
 **Fix:** Im `Calculate`-Endpunkt `ModelState.IsValid` prüfen und bei ungültigen
 Daten `BadRequest(ModelState)` zurückgeben, bevor gerechnet/gespeichert wird.
 
-## 3. Oszillation bei Tank-Grenzfällen (Modellierungsschwäche)
+## 3. Oszillation bei Tank-Grenzfällen (Modellierungsschwäche) — ✅ BEHOBEN
 
 **Datei:** [SimracingUtility/Models/FuelCalcViewModel.cs:46](SimracingUtility/Models/FuelCalcViewModel.cs) (`CalculateFuel`, Schleife Zeile 46–54)
 
@@ -63,11 +63,17 @@ Inkonsistenz zwischen `TotalFuelNeeded` (mit altem Stopp-Wert berechnet) und
 
 **Auswirkung:** Kein Crash, aber nicht-deterministisches Ergebnis im Grenzfall.
 
-## 4. Kleinere Punkte (Spritrechner)
+**Fix:** `CalculateFuel` fährt das Rennen jetzt Runde für Runde nach (direkte
+Simulation) statt den Fixpunkt iterativ zu schätzen. Runden und Boxenstopps sind
+damit exakt gekoppelt und deterministisch; der 1-Schritt-Versatz zwischen
+`TotalFuelNeeded` und `NumberOfPitStops`/`TotalTimeLost` entfällt. Gegen eine
+Hand-Simulation verifiziert (u. a. Grenzfall ohne Phantom-Stopp am Rennende).
 
-- **`Laps` als Nachkommazahl:** Es werden fraktionale Runden angezeigt (z. B.
-  117,92). Für eine Spritplanung ist eher die aufgerundete Rundenzahl sinnvoll —
-  Modellierungsfrage, kein Crash.
+## 4. Kleinere Punkte (Spritrechner) — ✅ BEHOBEN
+
+- **`Laps` als Nachkommazahl:** Es wurden fraktionale Runden angezeigt (z. B.
+  117,92). **Fix:** Die Simulation zählt ganze Runden (eine angefangene Runde zählt
+  voll), `Laps` ist dadurch ganzzahlig.
 
 ---
 
@@ -169,9 +175,8 @@ verifizieren oder entfernen.
 
 ---
 
-**Fazit:** Der Rechenkern ist solide und durch Unit-Tests abgedeckt. Beim
-Spritrechner ist **#1** der einzige direkt sichtbare Fehler, **#2** der relevanteste
-für die Datenqualität. Im Setup-Hub ist **#5** der wichtigste Punkt (vermeidbare
-Last durch Laden der Dateibytes in der Übersicht); der Rest ist kosmetisch bzw.
-betrieblich. Beim LMU-Agent sind alle offenen Punkte (A–E) bewusst gewählt und
-oben begründet.
+**Fazit:** Der Rechenkern ist solide und durch Unit-Tests abgedeckt. Die
+Spritrechner-Punkte **#1–#4** und die Setup-Hub-Punkte **#5–#7** sind behoben
+(Details in [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md)); offen bleiben nur die
+betrieblichen Hinweise unter **#8**. Beim LMU-Agent sind alle offenen Punkte (A–E)
+bewusst gewählt und oben begründet.

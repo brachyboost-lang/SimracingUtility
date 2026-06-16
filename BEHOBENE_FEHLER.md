@@ -126,6 +126,22 @@ beschädigte Dateien werden übersprungen.
 **Fix:** `ModelState.IsValid` wird geprüft; bei ungültigen Daten `BadRequest`,
 bevor gerechnet/gespeichert wird.
 
+### W3. Oszillation/Nicht-Determinismus im Tank-Grenzfall
+**Problem:** Die iterative Fixpunkt-Schleife (`pitStops` ↔ Sprit) konnte im
+Tank-Grenzfall pendeln und lief dann bis `maxIter=40`; das Ergebnis hing von der
+letzten Iteration ab. Zusätzlich ein 1-Schritt-Versatz zwischen `TotalFuelNeeded`
+(mit altem Stopp-Wert) und `NumberOfPitStops`/`TotalTimeLost` (neuer Wert).
+**Fix:** `CalculateFuel` simuliert das Rennen Runde für Runde (volle Renndauer,
+Tankverbrauch; getankt wird nur, wenn danach noch eine Runde möglich ist). Runden
+und Stopps sind exakt gekoppelt, das Ergebnis ist deterministisch und konsistent.
+Gegen eine Hand-Simulation verifiziert (Grenzfall ohne Phantom-Stopp am Rennende).
+
+### W4. Fraktionale Runden im Spritrechner
+**Problem:** `Laps` wurde als Nachkommazahl ausgewiesen (z. B. 117,92), für eine
+Spritplanung wenig sinnvoll.
+**Fix:** Die Simulation zählt ganze Runden (eine angefangene Runde zählt voll);
+`Laps` ist dadurch ganzzahlig, `TotalFuelNeeded = Runden × Verbrauch/Runde`.
+
 ### W5. Übersicht lud komplette Setup-Dateien
 **Fix:** Projektion auf ein `Setup` **ohne `FileData`**; die Bytes werden erst
 im Download geladen.

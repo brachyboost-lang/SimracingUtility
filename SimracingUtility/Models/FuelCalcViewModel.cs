@@ -35,28 +35,48 @@ namespace SimracingUtility.Models
                 return;
             }
 
-            double totalFuel = 0;
-            int pitStops = 0;
-            double prevFuel;
-            int maxIter = 40;
-            int iter = 0;
-
             double eventSeconds = EventDurationMinutes * 60.0;
+            double pitCost = PitBoxTime + DriveThroughTime;
+            const double eps = 1e-9; // absorbiert Gleitkomma-Rauschen an Grenzwerten
 
-            do
+            // Direkte Rennsimulation: Runden und Boxenstopps sind gegenseitig
+            // abhaengig – ein Stopp kostet Streckenzeit → weniger Runden → weniger
+            // Sprit → evtl. weniger Stopps. Statt diese Rueckkopplung iterativ zu
+            // schaetzen (was im Tank-Grenzfall pendelte und ein nicht-deterministi-
+            // sches Ergebnis lieferte), wird das Rennen Runde fuer Runde nachgefahren.
+            // Das koppelt Runden und Stopps exakt und ist deterministisch.
+            int laps = 0;
+            int pitStops = 0;
+            double clockRemaining = eventSeconds; // verbleibende Rennzeit in Sekunden
+            double fuelInTank = FuelTankCapacity;  // Start mit vollem Tank
+            const int maxLaps = 1_000_000;         // Sicherheitsnetz gegen Extremeingaben
+
+            while (clockRemaining > eps && laps < maxLaps)
             {
-                prevFuel = totalFuel;
-                double availableSeconds = Math.Max(0, eventSeconds - pitStops * (PitBoxTime + DriveThroughTime));
-                double laps = availableSeconds / TimePerLap;
-                totalFuel = Math.Max(0, laps * FuelPerLap);
-                pitStops = Math.Max(0, (int)Math.Ceiling(totalFuel / FuelTankCapacity) - 1);
-                iter++;
-            } while (iter < maxIter && Math.Abs(totalFuel - prevFuel) > 0.01);
+                // Reicht der Sprit nicht fuer die naechste Runde? Zuerst tanken.
+                if (FuelPerLap > 0 && fuelInTank < FuelPerLap - eps)
+                {
+                    // Ein voller Tank muss ueberhaupt fuer eine Runde reichen.
+                    if (FuelTankCapacity < FuelPerLap) break;
+                    // Nur tanken, wenn danach noch Zeit fuer mindestens eine Runde
+                    // bleibt – sonst waere es ein Phantom-Stopp ohne weitere Runde.
+                    if (clockRemaining - pitCost <= eps) break;
+                    clockRemaining -= pitCost;
+                    pitStops++;
+                    fuelInTank = FuelTankCapacity;
+                }
+
+                // Eine im Rennen begonnene Runde wird komplett gewertet (die Zeit
+                // darf dabei ablaufen) → die angefangene Runde zaehlt voll.
+                laps++;
+                clockRemaining -= TimePerLap;
+                fuelInTank -= FuelPerLap;
+            }
 
             NumberOfPitStops = pitStops;
-            TotalFuelNeeded = totalFuel;
-            TotalTimeLost = NumberOfPitStops * (PitBoxTime + DriveThroughTime);
-            Laps = totalFuel > 0 && FuelPerLap > 0 ? totalFuel / FuelPerLap : 0;
+            TotalFuelNeeded = Math.Max(0, laps * FuelPerLap);
+            TotalTimeLost = pitStops * pitCost;
+            Laps = laps;
         }
 
     }

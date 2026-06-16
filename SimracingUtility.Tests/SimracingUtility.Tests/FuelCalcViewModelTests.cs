@@ -96,5 +96,94 @@ namespace SimracingUtility.Tests
             Assert.Equal(firstFuel, vm.TotalFuelNeeded, 3);
             Assert.Equal(firstLaps, vm.Laps, 3);
         }
+
+        [Fact]
+        public void CalculateFuel_Laps_AreWholeNumbers()
+        {
+            // #4: ganze Planungsrunde statt fraktionaler Runden (z. B. 117,92).
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            vm.CalculateFuel();
+            Assert.True(vm.Laps == Math.Floor(vm.Laps)); // keine Nachkommastellen
+        }
+
+        [Fact]
+        public void CalculateFuel_FuelMatchesLaps_NoOffByOne()
+        {
+            // #3: Sprit und Runden/Stopps stammen aus derselben Rechnung
+            // (vorher 1-Schritt-Versatz zwischen altem und neuem Stopp-Wert).
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            vm.CalculateFuel();
+            Assert.Equal(vm.Laps * vm.FuelPerLap, vm.TotalFuelNeeded, 6);
+        }
+
+        [Fact]
+        public void CalculateFuel_Deterministic_AtTankBoundary()
+        {
+            // #3: Im Tank-Grenzfall darf das Ergebnis nicht pendeln.
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 60, TimePerLap = 60,
+                FuelPerLap = 10, FuelTankCapacity = 100, PitBoxTime = 120, DriveThroughTime = 0 };
+            vm.CalculateFuel();
+            var stops = vm.NumberOfPitStops; var fuel = vm.TotalFuelNeeded; var laps = vm.Laps;
+            vm.CalculateFuel();
+            Assert.Equal(stops, vm.NumberOfPitStops);
+            Assert.Equal(fuel, vm.TotalFuelNeeded, 6);
+            Assert.Equal(laps, vm.Laps, 6);
+        }
+
+        [Fact]
+        public void CalculateFuel_PitTime_ReducesLaps()
+        {
+            // Kernpunkt: Boxenstopps kosten Streckenzeit und verringern die Runden.
+            // Gleiche Eingaben, nur die Boxenzeit unterscheidet sich.
+            var ohnePit = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 0, DriveThroughTime = 0 };
+            var mitPit = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            ohnePit.CalculateFuel();
+            mitPit.CalculateFuel();
+            Assert.True(mitPit.NumberOfPitStops > 0);   // Stopps wegen Sprit noetig
+            Assert.True(mitPit.Laps < ohnePit.Laps);    // Boxenzeit kostet Runden
+        }
+
+        [Fact]
+        public void CalculateFuel_PitStops_AreSufficientForFuel()
+        {
+            // Sicherheit: Start-Tank + Nachtankungen muessen den Gesamtsprit decken.
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 240, TimePerLap = 95,
+                FuelPerLap = 3.4, FuelTankCapacity = 80, PitBoxTime = 25, DriveThroughTime = 8 };
+            vm.CalculateFuel();
+            double capacity = (vm.NumberOfPitStops + 1) * vm.FuelTankCapacity;
+            Assert.True(capacity + 1e-6 >= vm.TotalFuelNeeded); // nie zu knapp getankt
+        }
+
+        [Fact]
+        public void CalculateFuel_NoPhantomPitStopAtRaceEnd()
+        {
+            // Grenzfall: Restzeit reicht fuer einen Stopp, aber nicht mehr fuer eine
+            // weitere Runde -> kein zusaetzlicher Phantom-Stopp. Erwartet: 50/4.
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 60, TimePerLap = 60,
+                FuelPerLap = 10, FuelTankCapacity = 100, PitBoxTime = 120, DriveThroughTime = 0 };
+            vm.CalculateFuel();
+            Assert.Equal(50, vm.Laps, 6);
+            Assert.Equal(4, vm.NumberOfPitStops);
+            Assert.Equal(500, vm.TotalFuelNeeded, 6);
+            Assert.Equal(480, vm.TotalTimeLost, 6);
+        }
+
+        [Fact]
+        public void CalculateFuel_KnownScenario_ExactValues()
+        {
+            // Von Hand simuliert: 2h, 60s/Runde, 5L/Runde, 100L, 25s Boxenverlust
+            // -> 118 Runden, 5 Stopps, 590L, 125s Zeitverlust.
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            vm.CalculateFuel();
+            Assert.Equal(118, vm.Laps, 6);
+            Assert.Equal(5, vm.NumberOfPitStops);
+            Assert.Equal(590, vm.TotalFuelNeeded, 6);
+            Assert.Equal(125, vm.TotalTimeLost, 6);
+        }
     }
 }
