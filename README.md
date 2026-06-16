@@ -18,8 +18,9 @@ Website zum Download bereitgestellt (siehe [LMU-Agent (Download)](#lmu-agent-dow
 ## Funktionsumfang
 
 - **Spritrechner** – Eingabe von Strecke, Renndauer, Verbrauch/Runde, Rundenzeit,
-  Tankgröße sowie Boxen-/Durchfahrtszeiten; daraus werden Boxenstopps, Runden und
-  Gesamt-Spritbedarf berechnet.
+  Tankgröße, Boxen-/Durchfahrtszeiten sowie einer optionalen **Sicherheitsreserve**
+  (in Runden oder Prozent); daraus werden Boxenstopps, Runden, Gesamt-Spritbedarf
+  und ein **Stint-Plan** (Runden und Sprit je Tankfüllung) berechnet.
 - **Fahrzeugauswahl (Spritrechner)** – Fahrzeugklasse und -name werden aus
   [`cars.json`](SimracingUtility/wwwroot/data/cars.json) geladen; die Fahrzeugliste
   filtert sich per JavaScript nach gewählter Klasse.
@@ -93,6 +94,12 @@ Stopps) per **direkter Rennsimulation** – das Rennen wird Runde für Runde nac
 Das koppelt Runden und Boxenstopps exakt und ist deterministisch (kein Pendeln im
 Tank-Grenzfall). Bei ungültigen Eingaben (Rundenzeit oder Tankgröße ≤ 0) werden alle
 Ergebnisse auf 0 gesetzt.
+
+**Sicherheitsreserve & Stint-Plan:** Während der Simulation werden die einzelnen Stints
+(Runden-Serien je Tankfüllung) mitgeschrieben und als Plan ausgegeben. Eine optionale
+Reserve (in Runden oder Prozent) wird als zusätzlicher Sprit fürs Ziel aufgeschlagen
+(`Total Fuel Needed = Verbrauch + Reserve`); die Stopp-Strategie bleibt gleich. Passt
+die Reserve nicht mehr in den letzten Tank, weist ein Hinweis darauf hin.
 
 ## Setup-Hub
 

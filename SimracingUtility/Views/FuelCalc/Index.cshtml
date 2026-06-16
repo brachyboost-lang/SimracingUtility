@@ -1,4 +1,8 @@
 ﻿@model SimracingUtility.Models.FuelCalcViewModel
+@{
+    var reserveText = Model.FuelReserveLiters > 0 ? $"davon {Model.FuelReserveLiters:0.##} L Reserve" : "";
+    var reserveWarnClass = Model.ReserveExceedsTank ? "" : "d-none";
+}
 
 
 
@@ -60,6 +64,16 @@
                 <label asp-for="FuelTankCapacity" class="form-label">Fuel Tank Capacity</label>
                 <input asp-for="FuelTankCapacity" type="number" step="any" class="form-control" />
             </div>
+            <div class="mb-3 col-6">
+                <label asp-for="FuelReserve" class="form-label">Sicherheitsreserve</label>
+                <div class="input-group">
+                    <input asp-for="FuelReserve" type="number" step="any" min="0" class="form-control" />
+                    <select asp-for="FuelReserveUnit" class="form-select" style="max-width: 8rem;">
+                        <option value="Laps">Runden</option>
+                        <option value="Percent">Prozent</option>
+                    </select>
+                </div>
+            </div>
             <button type="submit" class="btn btn-primary">Calculate</button>
             <div class="container">
 
@@ -76,12 +90,39 @@
                 <div class="mb-3">
                     <label class="form-label">Total Fuel Needed</label>
                     <input asp-for="TotalFuelNeeded" class="form-control" readonly />
+                    <small id="reserveInfo" class="form-text text-muted">@reserveText</small>
+                </div>
+
+                <div id="reserveWarning" class="alert alert-warning py-1 @reserveWarnClass">
+                    Reserve passt nicht mehr in den letzten Tank — plane einen zusätzlichen Boxenstopp.
                 </div>
 
             </div>
         </div>
     </div>
 </form>
+
+<h5 class="mt-3">Stint-Plan</h5>
+<table class="table table-sm" id="stintTable">
+    <thead>
+        <tr><th>Stint</th><th>Runden</th><th>von–bis</th><th>Sprit (L)</th></tr>
+    </thead>
+    <tbody>
+        @if (Model.Stints != null)
+        {
+            foreach (var st in Model.Stints)
+            {
+                <tr>
+                    <td>@st.StintNumber</td>
+                    <td>@st.Laps</td>
+                    <td>@(st.FromLap)–@(st.ToLap)</td>
+                    <td>@st.Fuel.ToString("0.##")</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
 <table class="table table-striped">
     <thead>
         <tr>
@@ -185,7 +226,9 @@
                 CarClass: getVal('CarClass') || '',
                 PitBoxTime: parseFloat(getVal('PitBoxTime') || '0'),
                 DriveThroughTime: parseFloat(getVal('DriveThroughTime') || '0'),
-                FuelTankCapacity: parseFloat(getVal('FuelTankCapacity') || '0')
+                FuelTankCapacity: parseFloat(getVal('FuelTankCapacity') || '0'),
+                FuelReserve: parseFloat(getVal('FuelReserve') || '0'),
+                FuelReserveUnit: getVal('FuelReserveUnit') || 'Laps'
             };
 
             // antiforgery token
@@ -212,6 +255,25 @@
                 setVal('NumberOfPitStops', data.numberOfPitStops);
                 setVal('Laps', data.laps);
                 setVal('TotalFuelNeeded', data.totalFuelNeeded);
+
+                var reserveInfo = document.getElementById('reserveInfo');
+                if (reserveInfo) reserveInfo.textContent = (data.fuelReserveLiters > 0) ? ('davon ' + data.fuelReserveLiters + ' L Reserve') : '';
+                var reserveWarning = document.getElementById('reserveWarning');
+                if (reserveWarning) reserveWarning.classList.toggle('d-none', !data.reserveExceedsTank);
+
+                var stintBody = document.querySelector('#stintTable tbody');
+                if (stintBody) {
+                    stintBody.innerHTML = '';
+                    (data.stints || []).forEach(function (s) {
+                        var tr = document.createElement('tr');
+                        [s.stintNumber, s.laps, s.fromLap + '–' + s.toLap, s.fuel].forEach(function (c) {
+                            var td = document.createElement('td');
+                            td.textContent = c;
+                            tr.appendChild(td);
+                        });
+                        stintBody.appendChild(tr);
+                    });
+                }
 
                 // append to recent table (match the table header order)
                 try {

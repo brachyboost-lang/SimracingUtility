@@ -24,6 +24,16 @@ namespace SimracingUtility.Models
         public double TimePerLap { get; set; }
         public double Laps { get; set; }
 
+        // Sicherheitsreserve (Eingabe): zusaetzlicher Sprit, mit dem man ins Ziel
+        // kommen will. Einheit "Laps" (Runden) oder "Percent" (% der Renndistanz).
+        public double FuelReserve { get; set; }
+        public string FuelReserveUnit { get; set; } = "Laps";
+
+        // Ergebnis-Zusatzfelder
+        public double FuelReserveLiters { get; set; } // berechnete Reserve in Litern
+        public bool ReserveExceedsTank { get; set; }  // Reserve passt nicht in den letzten Tank
+        public List<FuelStint> Stints { get; set; } = new();
+
         public void CalculateFuel()
         {
             if (TimePerLap <= 0 || FuelTankCapacity <= 0)
@@ -32,6 +42,9 @@ namespace SimracingUtility.Models
                 TotalFuelNeeded = 0;
                 Laps = 0;
                 TotalTimeLost = 0;
+                FuelReserveLiters = 0;
+                ReserveExceedsTank = false;
+                Stints = new List<FuelStint>();
                 return;
             }
 
@@ -51,6 +64,12 @@ namespace SimracingUtility.Models
             double fuelInTank = FuelTankCapacity;  // Start mit vollem Tank
             const int maxLaps = 1_000_000;         // Sicherheitsnetz gegen Extremeingaben
 
+            // Stint-Mitschnitt: ein Stint ist eine Runden-Serie auf einer Tankfuellung
+            // (zwischen zwei Boxenstopps bzw. Start/Ziel).
+            var stints = new List<FuelStint>();
+            int stintStartLap = 1;
+            int lapsThisStint = 0;
+
             while (clockRemaining > eps && laps < maxLaps)
             {
                 // Reicht der Sprit nicht fuer die naechste Runde? Zuerst tanken.
@@ -61,6 +80,22 @@ namespace SimracingUtility.Models
                     // Nur tanken, wenn danach noch Zeit fuer mindestens eine Runde
                     // bleibt – sonst waere es ein Phantom-Stopp ohne weitere Runde.
                     if (clockRemaining - pitCost <= eps) break;
+
+                    // Laufenden Stint vor dem Tanken abschliessen.
+                    if (lapsThisStint > 0)
+                    {
+                        stints.Add(new FuelStint
+                        {
+                            StintNumber = stints.Count + 1,
+                            FromLap = stintStartLap,
+                            ToLap = stintStartLap + lapsThisStint - 1,
+                            Laps = lapsThisStint,
+                            Fuel = lapsThisStint * FuelPerLap
+                        });
+                        stintStartLap += lapsThisStint;
+                        lapsThisStint = 0;
+                    }
+
                     clockRemaining -= pitCost;
                     pitStops++;
                     fuelInTank = FuelTankCapacity;
@@ -69,15 +104,59 @@ namespace SimracingUtility.Models
                 // Eine im Rennen begonnene Runde wird komplett gewertet (die Zeit
                 // darf dabei ablaufen) → die angefangene Runde zaehlt voll.
                 laps++;
+                lapsThisStint++;
                 clockRemaining -= TimePerLap;
                 fuelInTank -= FuelPerLap;
             }
 
+            // Letzten (laufenden) Stint abschliessen.
+            if (lapsThisStint > 0)
+            {
+                stints.Add(new FuelStint
+                {
+                    StintNumber = stints.Count + 1,
+                    FromLap = stintStartLap,
+                    ToLap = stintStartLap + lapsThisStint - 1,
+                    Laps = lapsThisStint,
+                    Fuel = lapsThisStint * FuelPerLap
+                });
+            }
+
+            double consumedFuel = Math.Max(0, laps * FuelPerLap);
+
+            // Sicherheitsreserve, Modell "mehr laden, gleiche Strategie": die Reserve
+            // wird zusaetzlich geladen, die Stopp-Strategie bleibt gleich. Reicht der
+            // letzte Tank nicht, um mit der Reserve ins Ziel zu kommen, wird das als
+            // Hinweis markiert (ReserveExceedsTank) – ohne die Stoppzahl zu aendern.
+            double reserveLaps = 0;
+            if (FuelReserve > 0 && laps > 0 && FuelPerLap > 0)
+            {
+                reserveLaps = string.Equals(FuelReserveUnit, "Percent", StringComparison.OrdinalIgnoreCase)
+                    ? laps * (FuelReserve / 100.0)
+                    : FuelReserve;
+            }
+            FuelReserveLiters = Math.Max(0, reserveLaps * FuelPerLap);
+
+            double endFuel = Math.Max(0, fuelInTank); // natuerlicher Rest im letzten Tank
+            ReserveExceedsTank = FuelReserveLiters > endFuel + eps;
+
             NumberOfPitStops = pitStops;
-            TotalFuelNeeded = Math.Max(0, laps * FuelPerLap);
+            TotalFuelNeeded = consumedFuel + FuelReserveLiters;
             TotalTimeLost = pitStops * pitCost;
             Laps = laps;
+            Stints = stints;
         }
 
+    }
+
+    // Ein Stint: zusammenhaengende Runden auf einer Tankfuellung (zwischen zwei
+    // Boxenstopps bzw. Start/Ziel).
+    public class FuelStint
+    {
+        public int StintNumber { get; set; }
+        public int FromLap { get; set; }
+        public int ToLap { get; set; }
+        public int Laps { get; set; }
+        public double Fuel { get; set; }
     }
 }

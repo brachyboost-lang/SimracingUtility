@@ -185,5 +185,93 @@ namespace SimracingUtility.Tests
             Assert.Equal(590, vm.TotalFuelNeeded, 6);
             Assert.Equal(125, vm.TotalTimeLost, 6);
         }
+
+        // ----- Sicherheitsreserve ("mehr laden, gleiche Strategie") -----
+
+        [Fact]
+        public void CalculateFuel_Reserve_Laps_AddsFuel_KeepsStops()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 10, TimePerLap = 60,
+                FuelPerLap = 2, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5,
+                FuelReserve = 2, FuelReserveUnit = "Laps" };
+            vm.CalculateFuel();
+            Assert.Equal(10, vm.Laps, 6);
+            Assert.Equal(0, vm.NumberOfPitStops);
+            Assert.Equal(4, vm.FuelReserveLiters, 6);   // 2 Runden * 2 L
+            Assert.Equal(24, vm.TotalFuelNeeded, 6);    // 20 Verbrauch + 4 Reserve
+            Assert.False(vm.ReserveExceedsTank);
+        }
+
+        [Fact]
+        public void CalculateFuel_Reserve_Percent_AddsFuel()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 10, TimePerLap = 60,
+                FuelPerLap = 2, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5,
+                FuelReserve = 10, FuelReserveUnit = "Percent" };
+            vm.CalculateFuel();
+            // 10 % von 10 Runden = 1 Runde = 2 L Reserve
+            Assert.Equal(2, vm.FuelReserveLiters, 6);
+            Assert.Equal(22, vm.TotalFuelNeeded, 6);
+        }
+
+        [Fact]
+        public void CalculateFuel_Reserve_Zero_NoChange()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5,
+                FuelReserve = 0 };
+            vm.CalculateFuel();
+            Assert.Equal(590, vm.TotalFuelNeeded, 6);
+            Assert.Equal(0, vm.FuelReserveLiters, 6);
+            Assert.False(vm.ReserveExceedsTank);
+        }
+
+        [Fact]
+        public void CalculateFuel_Reserve_ExceedsLastTank_SetsFlag()
+        {
+            // Referenzszenario endet mit 10 L Rest im letzten Tank; 3 Runden Reserve
+            // (15 L) passen nicht mehr -> Hinweis, Stoppzahl bleibt aber gleich.
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5,
+                FuelReserve = 3, FuelReserveUnit = "Laps" };
+            vm.CalculateFuel();
+            Assert.True(vm.ReserveExceedsTank);
+            Assert.Equal(5, vm.NumberOfPitStops);       // Strategie unveraendert
+            Assert.Equal(605, vm.TotalFuelNeeded, 6);   // 590 + 15
+        }
+
+        // ----- Stint-Plan -----
+
+        [Fact]
+        public void CalculateFuel_Stints_CoverAllLapsAndFuel()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            vm.CalculateFuel();
+            Assert.Equal(vm.NumberOfPitStops + 1, vm.Stints.Count); // 1 Stint mehr als Stopps
+            Assert.Equal((int)vm.Laps, vm.Stints.Sum(s => s.Laps));
+            Assert.Equal(vm.Laps * vm.FuelPerLap, vm.Stints.Sum(s => s.Fuel), 6);
+        }
+
+        [Fact]
+        public void CalculateFuel_Stints_AreContiguousFromLapOne()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 120, TimePerLap = 60,
+                FuelPerLap = 5, FuelTankCapacity = 100, PitBoxTime = 20, DriveThroughTime = 5 };
+            vm.CalculateFuel();
+            Assert.Equal(1, vm.Stints.First().FromLap);
+            for (int i = 1; i < vm.Stints.Count; i++)
+                Assert.Equal(vm.Stints[i - 1].ToLap + 1, vm.Stints[i].FromLap);
+            Assert.Equal((int)vm.Laps, vm.Stints.Last().ToLap);
+        }
+
+        [Fact]
+        public void CalculateFuel_Stints_EmptyWhenInputInvalid()
+        {
+            var vm = new FuelCalcViewModel { EventDurationMinutes = 60, TimePerLap = 0,
+                FuelPerLap = 2, FuelTankCapacity = 0 };
+            vm.CalculateFuel();
+            Assert.Empty(vm.Stints);
+        }
     }
 }
