@@ -60,6 +60,35 @@ else
         <span class="text-muted small">Stand: @Model.UpdatedAt.ToLocalTime().ToString("g")</span>
     </div>
 
+    <div class="mb-4">
+        @if (!string.IsNullOrEmpty(Model.SimGridProfileUrl))
+        {
+            <a href="@Model.SimGridProfileUrl" target="_blank" rel="noopener noreferrer"
+               class="btn btn-sm btn-outline-secondary">SimGrid-Profil ↗</a>
+        }
+        <details class="d-inline-block ms-2 align-middle">
+            <summary class="small text-muted" style="cursor:pointer;">
+                SimGrid-Profil @(string.IsNullOrEmpty(Model.SimGridProfileUrl) ? "hinzufügen" : "ändern")
+            </summary>
+            <form asp-action="SetSimGrid" method="post" class="row g-2 mt-2" style="max-width: 560px;">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="col flex-grow-1">
+                    <input type="text" name="simGridUrl" class="form-control form-control-sm"
+                           value="@Model.SimGridProfileUrl"
+                           placeholder="https://www.thesimgrid.com/drivers/8444-ranokar" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-primary">Speichern</button>
+                </div>
+            </form>
+            <p class="form-text mb-0">Nur der Link zu deinem SimGrid-Profil; die Daten bleiben bei SimGrid.</p>
+        </details>
+        @if (TempData["SimGridError"] != null)
+        {
+            <div class="text-danger small mt-1">@TempData["SimGridError"]</div>
+        }
+    </div>
+
     <div class="row g-4 mb-4">
         @{ RenderCategory("Sprint (< 90 min)", sprint); RenderCategory("Endurance (≥ 90 min)", endurance); }
     </div>

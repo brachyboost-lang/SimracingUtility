@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimracingUtility.Data;
+using SimracingUtility.Services;
 
 namespace SimracingUtility.Controllers
 {
@@ -31,6 +32,36 @@ namespace SimracingUtility.Controllers
                 .FirstOrDefaultAsync();
 
             return View(driver);
+        }
+
+        // Speichert die vom Nutzer selbst angegebene SimGrid-Profil-URL am Fahrer.
+        // Nur thesimgrid.com wird akzeptiert (siehe SimGridProfile); leere Eingabe
+        // entfernt den Link wieder.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetSimGrid(int id, string? simGridUrl)
+        {
+            var driver = await _db.LmuDrivers.FirstOrDefaultAsync(d => d.Id == id);
+            if (driver == null) return NotFound();
+
+            if (string.IsNullOrWhiteSpace(simGridUrl))
+            {
+                driver.SimGridProfileUrl = null;
+            }
+            else if (SimGridProfile.TryParse(simGridUrl, out _, out _, out var canonical))
+            {
+                driver.SimGridProfileUrl = canonical;
+            }
+            else
+            {
+                TempData["SimGridError"] =
+                    "Bitte eine gültige SimGrid-Profil-URL angeben " +
+                    "(z. B. https://www.thesimgrid.com/drivers/8444-ranokar).";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
     }
 }

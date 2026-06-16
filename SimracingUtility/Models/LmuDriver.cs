@@ -24,6 +24,14 @@ namespace SimracingUtility.Models
 
         public DateTime UpdatedAt { get; set; }
 
+        /// <summary>
+        /// Vom Nutzer selbst angegebene SimGrid-Fahrerprofil-URL (thesimgrid.com).
+        /// Optional; wird nur als Deep-Link angezeigt. Die Statistik-Anbindung über
+        /// die GridOS-API folgt separat. Wird beim Agent-Push nicht überschrieben.
+        /// </summary>
+        [StringLength(300)]
+        public string? SimGridProfileUrl { get; set; }
+
         public List<LmuCategoryStat> Categories { get; set; } = new();
         public List<LmuTrackBest> TrackBests { get; set; } = new();
         public List<LmuRacedWith> RacedWith { get; set; } = new();

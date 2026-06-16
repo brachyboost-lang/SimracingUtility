@@ -191,7 +191,7 @@ an die Website; diese speichert sie in PostgreSQL und zeigt sie an.
 |-------|-------|
 | `POST /api/lmu/stats` | Ingest; nimmt das Dashboard des Agents entgegen (Header `X-Api-Key`; optional `X-User-Key` = Host-Nutzer-Identifier) |
 | `GET /api/lmu/stats?owner=&driver=` | **JSON-Lese-API** für ein beliebiges Frontend (host-agnostisch) |
-| `/LmuStats` | „Meine Stats" (Razor-Demo): Sprint-/Endurance-KPIs, beste Runde je Strecke (mit Telemetrie-Download), Mitstreiter und gegnerische custom Teams |
+| `/LmuStats` | „Meine Stats" (Razor-Demo): Sprint-/Endurance-KPIs, beste Runde je Strecke (mit Telemetrie-Download), Mitstreiter und gegnerische custom Teams; optionaler, selbst gepflegter **SimGrid-Profil-Link** (nur Deep-Link; Datenanbindung über die GridOS-API ist ein separater Schritt) |
 
 > **Integration in ein bestehendes System:** siehe [INTEGRATION.md](INTEGRATION.md).
 > Die Stats werden über `OwnerKey` (Header `X-User-Key`) einem Host-Nutzer
