@@ -169,14 +169,16 @@ Reale Teamnamen **ohne** Jahr/Startnummer (z. B. „RLR MSport #15"), die nicht 
 werden nicht als Stock-Livery erkannt. Bei Bedarf dort ergänzen. Saison-Varianten
 mit Jahr+Nummer werden automatisch über das Muster erkannt.
 
-## E. Event-/DriverProfile-Parser sind Platzhalter
-Unverifiziertes Schema, vom Agent nicht aktiv genutzt. Entweder gegen echte Quellen
-verifizieren oder entfernen.
+## E. Event-/DriverProfile-Parser sind Platzhalter — ✅ BEHOBEN (entfernt)
+Unverifiziertes Schema, vom Agent nicht aktiv genutzt. **Entfernt** (Parser, Interfaces,
+Modelle, Legacy-API-Controller, DbSets, DI-Registrierungen); SQLite-`SchemaVersion`
+1→2, da keine echte Quelle existiert. Details in [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md).
 
 ---
 
 **Fazit:** Der Rechenkern ist solide und durch Unit-Tests abgedeckt. Die
 Spritrechner-Punkte **#1–#4** und die Setup-Hub-Punkte **#5–#7** sind behoben
 (Details in [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md)); offen bleiben nur die
-betrieblichen Hinweise unter **#8**. Beim LMU-Agent sind alle offenen Punkte (A–E)
-bewusst gewählt und oben begründet.
+betrieblichen Hinweise unter **#8**. Beim LMU-Agent ist Punkt **E** behoben
+(Platzhalter-Parser entfernt); die übrigen Punkte (A–D) sind bewusst gewählt und
+oben begründet.

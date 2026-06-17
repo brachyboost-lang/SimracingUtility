@@ -87,9 +87,6 @@ und durch Unit-Tests abgedeckt.
 > ist, wird die **Klassenposition** ausgewertet und die Top-50 % je Klasse
 > berechnet. Korrupte Einzeldateien (abgebrochene Schreibvorgänge) werden
 > protokolliert und übersprungen.
->
-> Die `Event`/`DriverProfile`-Parser bleiben unverifizierte Platzhalter und
-> werden vom Dienst derzeit nicht aktiv genutzt.
 
 ## Konfiguration
 
@@ -178,8 +175,6 @@ mehrfach zählen. Natürliche Schlüssel:
 
 | Entität | Schlüssel | Verhalten |
 |---------|-----------|-----------|
-| Event | Name + Date | Felder aktualisieren |
-| DriverProfile | Name | Profilwerte aktualisieren |
 | RaceResult | Fahrer + Renndatum + Position | nur einfügen, wenn neu |
 | Statistics | DriverName | Werte aktualisieren |
 
@@ -187,12 +182,8 @@ mehrfach zählen. Natürliche Schlüssel:
 
 | Endpoint | Methode | Beschreibung |
 |----------|---------|--------------|
-| `/api/events` | GET | Anstehende Events |
-| `/api/events/{id}` | GET | Event mit ID |
 | `/api/results` | GET | Letzte Rennergebnisse |
 | `/api/results/{id}` | GET | Ergebnis mit ID |
-| `/api/profiles` | GET | Alle Fahrer-Profile |
-| `/api/profiles/{id}` | GET | Profil mit ID |
 | `/api/statistics` | GET | Statistiken aller Fahrer |
 | `/api/statistics/driver/{name}` | GET | Statistiken eines Fahrers |
 | `/api/statistics/recalculate` | POST | Statistiken neu berechnen & speichern |
@@ -281,8 +272,6 @@ das Publish-Skript [`publish.ps1`](publish.ps1) legt das ZIP nach
 
 ## Offene Punkte
 
-- **Event-/DriverProfile-Quellen** klären (Format/Pfad) oder die Platzhalter
-  entfernen, falls nicht benötigt.
 - Optional: korrupte Ergebnisdateien (abgebrochene Schreibvorgänge) toleranter
   behandeln, statt sie zu überspringen.
 - **EF-Migrationen** statt `EnsureCreated`, sobald sich das Schema stabilisiert.

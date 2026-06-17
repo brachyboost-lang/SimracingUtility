@@ -8,11 +8,9 @@ public class LMUAgentContext : DbContext
     // Bei jeder schemaverändernden Modelländerung erhöhen. Die SQLite-DB ist nur
     // ein aus den XML-Dateien reproduzierbarer Cache – bei abweichender Version
     // wird sie verworfen und neu aufgebaut (Ersatz für Migrationen).
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
-    public DbSet<Event> Events { get; set; }
     public DbSet<RaceResult> RaceResults { get; set; }
-    public DbSet<DriverProfile> DriverProfiles { get; set; }
     public DbSet<Statistics> Statistics { get; set; }
 
     /// <summary>Fester, gemeinsamer Speicherort der SQLite-Datei.</summary>
@@ -51,13 +49,6 @@ public class LMUAgentContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Event>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired();
-            entity.Property(e => e.Date).IsRequired();
-        });
-
         modelBuilder.Entity<RaceResult>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -66,13 +57,6 @@ public class LMUAgentContext : DbContext
             entity.Ignore(e => e.IsDnf);        // berechnete Eigenschaft, keine Spalte
             entity.Ignore(e => e.CarKey);       // berechnete Eigenschaft, keine Spalte
             entity.Ignore(e => e.IsEndurance);  // berechnete Eigenschaft, keine Spalte
-        });
-
-        modelBuilder.Entity<DriverProfile>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired();
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<Statistics>(entity =>

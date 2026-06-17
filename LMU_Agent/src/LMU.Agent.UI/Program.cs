@@ -12,9 +12,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<LMUAgentContext>();
 
 // Register Core Services
-builder.Services.AddScoped<IEventParser, EventParser>();
 builder.Services.AddScoped<IRaceResultParser, RaceResultParser>();
-builder.Services.AddScoped<IDriverProfileParser, DriverProfileParser>();
 builder.Services.AddScoped<IStatisticsParser, StatisticsParser>();
 
 var app = builder.Build();

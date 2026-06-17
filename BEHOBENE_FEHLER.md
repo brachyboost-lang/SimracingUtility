@@ -70,6 +70,14 @@ Schreiben idempotent; der Worker liest nun gefahrlos periodisch neu ein.
 ### 11. Aufräumen
 Leeren Platzhalter `Class1.cs` entfernt.
 
+### 11a. Platzhalter-Parser Event/DriverProfile entfernt (bekannter Punkt E)
+**Problem:** `EventParser`/`DriverProfileParser` (+ Interfaces, Modelle `Event`/
+`DriverProfile`, Legacy-API-Controller `Events`/`Profiles`) beruhten auf einem
+unverifizierten JSON-Schema und wurden vom aktiven Worker nie genutzt (der liest XML
+→ `RaceResult`/`Statistics`). **Fix:** ersatzlos entfernt inkl. DbSets und
+DI-Registrierungen; SQLite-`SchemaVersion` 1→2 (der reproduzierbare Cache wird neu
+aufgebaut). Agent baut, 47 Tests grün.
+
 ## LMU-Agent: Datenquelle & Statistik (falsche Grundannahme korrigiert)
 
 ### 12. Falsches Format und falscher Pfad

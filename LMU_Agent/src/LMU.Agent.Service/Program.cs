@@ -27,9 +27,7 @@ internal static class Program
         // Hintergrund-Host: Erfassung + Push (Worker).
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddScoped<LMUAgentContext>();
-        builder.Services.AddScoped<IEventParser, EventParser>();
         builder.Services.AddScoped<IRaceResultParser, RaceResultParser>();
-        builder.Services.AddScoped<IDriverProfileParser, DriverProfileParser>();
         builder.Services.AddScoped<IStatisticsParser, StatisticsParser>();
         builder.Services.AddHttpClient<StatsPushClient>();
         builder.Services.AddHostedService<Worker>();
