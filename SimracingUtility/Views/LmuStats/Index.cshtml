@@ -65,6 +65,30 @@ else
         {
             <a href="@Model.SimGridProfileUrl" target="_blank" rel="noopener noreferrer"
                class="btn btn-sm btn-outline-secondary">SimGrid-Profil ↗</a>
+
+            var sg = ViewBag.SimGridStats as SimGridStats;
+            if (sg != null && sg.HasAny)
+            {
+                <div class="row row-cols-3 row-cols-md-5 g-2 mt-2">
+                    @foreach (var (label, value) in new (string, int?)[]
+                    {
+                        ("Starts", sg.Starts), ("Siege", sg.Wins), ("Podien", sg.Podiums),
+                        ("Top 5", sg.Top5), ("Schnellste Runden", sg.FastestLaps),
+                    })
+                    {
+                        @if (value.HasValue)
+                        {
+                            <div class="col">
+                                <div class="card h-100 text-center"><div class="card-body py-2">
+                                    <div class="h5 mb-0">@value</div>
+                                    <div class="text-muted small">@label</div>
+                                </div></div>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="text-muted small mt-1">SimGrid-Stats aus dem öffentlichen Profil (best effort, ohne Gewähr).</div>
+            }
         }
         <details class="d-inline-block ms-2 align-middle">
             <summary class="small text-muted" style="cursor:pointer;">

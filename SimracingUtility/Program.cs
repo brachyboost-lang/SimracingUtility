@@ -23,6 +23,18 @@ namespace SimracingUtility
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddScoped<Services.IRecentFuelCalcService, Services.RecentFuelCalcService>();
+
+            // SimGrid-Profil-Stats (best-effort-Scraping): gecachter HTTP-Client mit
+            // Browser-Kennung und kurzem Timeout, damit ein langsames/fehlendes
+            // SimGrid die Stats-Seite nicht blockiert.
+            builder.Services.AddMemoryCache();
+            builder.Services.AddHttpClient<Services.SimGridClient>(c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(8);
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+            });
+
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();

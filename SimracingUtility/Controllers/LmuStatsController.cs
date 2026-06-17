@@ -10,11 +10,13 @@ namespace SimracingUtility.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly IConfiguration _config;
+        private readonly SimGridClient _simGrid;
 
-        public LmuStatsController(ApplicationDbContext db, IConfiguration config)
+        public LmuStatsController(ApplicationDbContext db, IConfiguration config, SimGridClient simGrid)
         {
             _db = db;
             _config = config;
+            _simGrid = simGrid;
         }
 
         public async Task<IActionResult> Index()
@@ -30,6 +32,13 @@ namespace SimracingUtility.Controllers
                 .Include(d => d.RacedWith)
                 .OrderByDescending(d => d.UpdatedAt)
                 .FirstOrDefaultAsync();
+
+            // Optional: öffentliche SimGrid-Stats des selbst gepflegten Profils
+            // (best effort, gecached). Schlägt es fehl, bleibt es einfach leer.
+            if (!string.IsNullOrEmpty(driver?.SimGridProfileUrl))
+            {
+                ViewBag.SimGridStats = await _simGrid.GetStatsAsync(driver.SimGridProfileUrl);
+            }
 
             return View(driver);
         }
