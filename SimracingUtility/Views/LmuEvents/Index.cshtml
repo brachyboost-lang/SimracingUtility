@@ -1,0 +1,70 @@
+@using SimracingUtility.Models
+@model LmuEventCatalog
+@{
+    ViewData["Title"] = "LMU – Was steht an?";
+    var today = ViewBag.Today is DateOnly d ? d : DateOnly.FromDateTime(DateTime.Today);
+    var upcoming = Model?.UpcomingSpecialEvents(today) ?? new();
+    var champs = Model?.SortedChampionships() ?? new();
+}
+
+<h1 class="mb-1">Le Mans Ultimate – Was steht an?</h1>
+<p class="text-muted">Allgemeine Übersicht über offizielle Special Events und Community-Meisterschaften – unabhängig vom LMU-Agent und ohne Personenbezug.</p>
+
+<h2 class="h4 mt-4">Offizielle Special Events</h2>
+@if (upcoming.Count == 0)
+{
+    <p class="text-muted">Aktuell keine kommenden Special Events gelistet.</p>
+}
+else
+{
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr><th>Datum</th><th>Event</th><th>Strecke</th><th>Klassen</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var e in upcoming)
+        {
+            <tr>
+                <td class="text-nowrap">@e.Date.ToString("dd.MM.yyyy")</td>
+                <td>@e.Title @(string.IsNullOrEmpty(e.Duration) ? "" : $"({e.Duration})")</td>
+                <td>@e.Track</td>
+                <td>@e.Classes</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <p class="text-muted small">Quelle: offizieller LMU-Kalender (lemansultimate.com), kuratiert gepflegt.</p>
+}
+
+<h2 class="h4 mt-4">Community-Meisterschaften (SimGrid)</h2>
+<p>
+    Alle LMU-Ligen inkl. Team-Rennen findest du im
+    <a href="https://www.thesimgrid.com/games/le-mans-ultimate-pc" target="_blank" rel="noopener noreferrer">LMU-Hub auf SimGrid ↗</a>.
+</p>
+@if (champs.Count > 0)
+{
+    <ul class="list-group">
+    @foreach (var c in champs)
+    {
+        <li class="list-group-item d-flex justify-content-between align-items-start gap-2">
+            <div>
+                <a href="@c.Url" target="_blank" rel="noopener noreferrer">@c.Name</a>
+                @if (c.IsTeam)
+                {
+                    <span class="badge text-bg-primary ms-1">Team</span>
+                }
+                @if (!string.IsNullOrEmpty(c.Organizer))
+                {
+                    <span class="text-muted small">· @c.Organizer</span>
+                }
+                @if (!string.IsNullOrEmpty(c.Note))
+                {
+                    <div class="text-muted small">@c.Note</div>
+                }
+            </div>
+            <span class="text-muted small text-nowrap">@(c.StartsOn.HasValue ? c.StartsOn.Value.ToString("dd.MM.yyyy") : "")</span>
+        </li>
+    }
+    </ul>
+}
+<p class="text-muted small mt-2">Kuratierte Auswahl – Team-Format und Anmeldung bitte auf SimGrid prüfen.</p>

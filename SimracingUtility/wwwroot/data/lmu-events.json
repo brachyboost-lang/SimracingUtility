@@ -1,0 +1,28 @@
+{
+  "_hinweis": "Kuratiert – manuell pflegen. Special Events: offizieller LMU-Kalender (lemansultimate.com). Meisterschaften: Deep-Links zu SimGrid; Team-Format/Anmeldung dort pruefen. isTeam ggf. nach Pruefung setzen.",
+  "specialEvents": [
+    { "title": "6 Hours of Le Mans", "date": "2026-06-23", "track": "Circuit de la Sarthe", "classes": "Hypercar, WEC LMP2, LMGT3", "duration": "6h" },
+    { "title": "4 Hours of Imola", "date": "2026-07-07", "track": "Imola", "classes": "ELMS LMP2, LMP3, LMGT3", "duration": "4h" },
+    { "title": "6 Hours of Interlagos", "date": "2026-07-14", "track": "Interlagos", "classes": "Hypercar, LMGT3", "duration": "6h" },
+    { "title": "4 Hours (Strecke TBA)", "date": "2026-07-28", "track": "TBA", "classes": "Hypercar, WEC LMP2, LMGT3", "duration": "4h" },
+    { "title": "8 Hours (Strecke TBA)", "date": "2026-08-11", "track": "TBA", "classes": "Hypercar, WEC LMP2, LMGT3", "duration": "8h" },
+    { "title": "4 Hours of Spa", "date": "2026-08-25", "track": "Spa-Francorchamps", "classes": "ELMS LMP2, LMP3, LMGT3", "duration": "4h" },
+    { "title": "6 Hours of COTA", "date": "2026-09-08", "track": "Circuit of the Americas", "classes": "Hypercar, LMGT3", "duration": "6h" },
+    { "title": "4 Hours of Silverstone", "date": "2026-09-15", "track": "Silverstone", "classes": "ELMS LMP2, LMP3, LMGT3", "duration": "4h" },
+    { "title": "4 Hours (Strecke TBA)", "date": "2026-09-22", "track": "TBA", "classes": "Hypercar, LMGT3", "duration": "4h" },
+    { "title": "6 Hours of Fuji", "date": "2026-09-29", "track": "Fuji", "classes": "Hypercar, LMGT3", "duration": "6h" },
+    { "title": "10 Hours (Strecke TBA)", "date": "2026-10-06", "track": "TBA", "classes": "Hypercar, WEC LMP2, LMGT3", "duration": "10h" },
+    { "title": "4 Hours of Portimao", "date": "2026-10-13", "track": "Portimao", "classes": "ELMS LMP2, LMP3, LMGT3", "duration": "4h" },
+    { "title": "24 Hours of Le Mans", "date": "2026-10-20", "track": "Circuit de la Sarthe", "classes": "Hypercar, LMP2, LMGT3", "duration": "24h" },
+    { "title": "8 Hours of Bahrain", "date": "2026-11-10", "track": "Bahrain International Circuit", "classes": "Hypercar, LMGT3", "duration": "8h" },
+    { "title": "6 Hours of Silverstone", "date": "2026-12-01", "track": "Silverstone", "classes": "Hypercar, LMGT3", "duration": "6h" },
+    { "title": "6 Hours (Strecke TBA)", "date": "2026-12-15", "track": "TBA", "classes": "Hypercar, WEC LMP2, LMGT3", "duration": "6h" }
+  ],
+  "championships": [
+    { "name": "Simmer X – Multiclass WEC Championship (Season 1)", "organizer": "Simmer X", "isTeam": true, "url": "https://www.thesimgrid.com/championships/24804", "note": "WEC-Format – Team-Status auf SimGrid pruefen" },
+    { "name": "Endurance Series – Concept Weekend", "organizer": "SimGrid", "isTeam": true, "url": "https://www.thesimgrid.com/championships/21016", "note": "Endurance – Team-Status auf SimGrid pruefen" },
+    { "name": "HGL™ – LMU Multiclass Sprint Championship (Season 2)", "organizer": "HGL", "isTeam": false, "url": "https://www.thesimgrid.com/championships/18679", "note": "Multiclass Sprint" },
+    { "name": "VLMM – Virtuelle Le Mans Ultimate Meisterschaft", "organizer": "SimRacingKanal", "isTeam": false, "url": "https://www.thesimgrid.com/championships/20866", "note": "Deutschsprachig" },
+    { "name": "DrivingItalia – LMU Championship", "organizer": "DrivingItalia", "isTeam": false, "url": "https://www.thesimgrid.com/championships/12127" }
+  ]
+}
