@@ -98,7 +98,7 @@ Der Setup-Hub ermöglicht es Nutzern, Fahrzeugkonfigurationen für verschiedene 
 
 ### Features
 
-- Upload von Setup-Dateien (bis 5 MB)
+- Upload von Setup-Dateien (bis 25 MB; native Endung je Sim oder `.zip`)
 - Zuordnung zu Simulation, Auto und Strecke
 - Metadaten: Name, Beschreibung, Rundenzeit, Temperatur
 - Download von gespeicherten Setups
@@ -235,6 +235,13 @@ Wichtige behobene Punkte:
 3. Oszillation bei Tank-Grenzfällen behoben durch Runde-für-Runde-Simulation
 4. Setup-Übersicht lädt nur Metadaten ohne FileData für bessere Performance
 5. Filter-Platzhalter "Alle" geht beim Sim-Wechsel verloren - UX verbessert
+
+## Dokumentation
+
+- [`readmeCode.md`](readmeCode.md) — **Code-Referenz**: jede Klasse + Methoden + Abhängigkeiten (C#, JavaScript, PowerShell).
+- [`INTEGRATION.md`](INTEGRATION.md) — Einbau der LMU-Statistik in ein bestehendes System (`OwnerKey`-Naht).
+- [`BEKANNTE_FEHLER.md`](BEKANNTE_FEHLER.md) / [`BEHOBENE_FEHLER.md`](BEHOBENE_FEHLER.md) — offene bzw. behobene Punkte.
+- [`LMU_Agent/README.md`](LMU_Agent/README.md) — Details zum lokalen LMU-Agent.
 
 ## Lizenz
 

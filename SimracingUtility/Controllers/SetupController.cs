@@ -10,7 +10,7 @@ namespace SimracingUtility.Controllers
 {
     public class SetupController : Controller
     {
-        private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB – Setup-Dateien sind klein
+        private const long MaxFileSizeBytes = 25 * 1024 * 1024; // 25 MB – erlaubt auch ZIPs mit Telemetrie (.ld/.ldx)
         private const int MaxOverviewItems = 200;
 
         private readonly ApplicationDbContext _db;
@@ -214,7 +214,7 @@ namespace SimracingUtility.Controllers
             else
             {
                 if (model.File.Length > MaxFileSizeBytes)
-                    ModelState.AddModelError(nameof(model.File), "Die Datei ist zu groß (max. 5 MB).");
+                    ModelState.AddModelError(nameof(model.File), "Die Datei ist zu groß (max. 25 MB).");
 
                 var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
                 var allowed = SimGameInfo.ExtensionsFor(model.Sim.Value);
