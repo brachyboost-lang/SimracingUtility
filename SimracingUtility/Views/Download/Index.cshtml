@@ -31,12 +31,13 @@
             <div class="card-body">
                 <h5 class="card-title">Was der Agent macht</h5>
                 <ul class="mb-0">
-                    <li>Liest <strong>Events</strong>, <strong>Rennergebnisse</strong> und
-                        <strong>Fahrerprofile</strong> aus den lokalen LMU-Dateien.</li>
-                    <li>Berechnet Fahrer-<strong>Statistiken</strong> (Siege, Podien, beste Runde …).</li>
-                    <li>Stellt alles über eine lokale <strong>REST-API</strong> bereit.</li>
-                    <li>Läuft als <strong>Windows-Dienst</strong> im Hintergrund und aktualisiert
-                        die Daten regelmäßig.</li>
+                    <li>Liest die <strong>Rennergebnisse</strong> aus den lokalen
+                        LMU-XML-Dateien (Steam-Ordner).</li>
+                    <li>Berechnet Fahrer-<strong>Statistiken</strong> (Siege, Podien, beste Runde …)
+                        und <strong>pusht</strong> das Dashboard an die Website.</li>
+                    <li>Stellt lokal <strong>Telemetrie-Downloads</strong> bereit.</li>
+                    <li>Läuft als kleines <strong>Tray-Programm</strong> im Hintergrund und
+                        aktualisiert die Daten regelmäßig.</li>
                 </ul>
             </div>
         </div>
@@ -47,11 +48,13 @@
                 <h5 class="card-title">Installation</h5>
                 <ol class="mb-0">
                     <li>ZIP herunterladen und entpacken.</li>
-                    <li>PowerShell <strong>als Administrator</strong> öffnen.</li>
-                    <li>Dienst registrieren und starten:
-                        <pre class="bg-light p-2 mt-2 mb-0"><code>sc create "LMU Agent" binPath= "C:\Pfad\LMU.Agent.Service.exe"
-sc start "LMU Agent"</code></pre>
-                    </li>
+                    <li><strong>LMU.Agent.Service.exe</strong> doppelklicken – kein
+                        PowerShell, kein Admin, keine separate .NET-Installation nötig.</li>
+                    <li>Der Agent läuft im <strong>Infobereich (Tray)</strong>; Beenden
+                        über das Tray-Menü. Optional automatischer Start: Verknüpfung in den
+                        Autostart-Ordner (<code>Win+R</code> → <code>shell:startup</code>).</li>
+                    <li>Bei Bedarf in <code>appsettings.json</code> die
+                        <code>Website:BaseUrl</code> (und den Ergebnis-Pfad) anpassen.</li>
                 </ol>
             </div>
         </div>
