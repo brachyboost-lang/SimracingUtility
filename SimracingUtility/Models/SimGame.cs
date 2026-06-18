@@ -31,13 +31,17 @@ namespace SimracingUtility.Models
                 [SimGame.ACC] = "Assetto Corsa Competizione"
             };
 
-        /// <summary>Erlaubte (kleingeschriebene) Datei-Endungen pro Simulation.</summary>
+        /// <summary>
+        /// Erlaubte (kleingeschriebene) Datei-Endungen pro Simulation. Zusätzlich zur
+        /// jeweiligen nativen Setup-Endung ist für alle Sims <c>.zip</c> erlaubt –
+        /// damit lassen sich z. B. mehrere Dateien (Setup + Telemetrie) bündeln.
+        /// </summary>
         public static readonly IReadOnlyDictionary<SimGame, string[]> AllowedExtensions =
             new Dictionary<SimGame, string[]>
             {
-                [SimGame.iRacing] = new[] { ".sto" },
-                [SimGame.LMU] = new[] { ".svm" },
-                [SimGame.ACC] = new[] { ".json" }
+                [SimGame.iRacing] = new[] { ".sto", ".zip" },
+                [SimGame.LMU] = new[] { ".svm", ".zip" },
+                [SimGame.ACC] = new[] { ".json", ".zip" }
             };
 
         public static string DisplayName(SimGame sim) =>

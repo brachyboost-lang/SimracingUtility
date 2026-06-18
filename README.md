@@ -212,6 +212,15 @@ Der Agent liest XML-Ergebnisdateien aus dem Steam-Installationsordner:
 - API-Keys und Sicherheitseinstellungen sind für Entwicklung konfiguriert. Für Produktion sind HTTPS und echte Secrets erforderlich.
 - Telemetrie-Download funktioniert nur bei same-machine Verbindung.
 
+## Geplante Erweiterungen
+
+- **Auto-Erkennung beim Setup-Upload:** Ein Parser soll aus der hochgeladenen
+  Setup-Datei (bzw. dem ZIP-Inhalt) selbst ermitteln, für welche **Simulation**,
+  welches **Auto** und welche **Strecke** das Setup ist – statt manueller Auswahl.
+- **Rundenzeit aus Telemetrie:** Liegt im ZIP eine **`.ld`/`.ldx`-Telemetriedatei**
+  bei, soll daraus die damit gefahrene **Rundenzeit** ausgelesen und automatisch als
+  Metadatum gesetzt werden.
+
 ## Fehlerkorrektur
 
 Das Projekt enthält zwei Dokumentationen für Fehler:
