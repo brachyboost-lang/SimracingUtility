@@ -35,7 +35,7 @@ namespace SimracingUtility.Services
 
         public async Task UpdateAsync(RecentFuelCalculation entity)
         {
-            entity.UpdatedAt = System.DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
             _db.RecentFuelCalculations.Update(entity);
             await _db.SaveChangesAsync();
         }

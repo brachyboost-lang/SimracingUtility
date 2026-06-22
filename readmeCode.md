@@ -1,9 +1,5 @@
 # readmeCode — Code-Referenz (alle Klassen, Methoden & Abhängigkeiten)
 
-Dieses Dokument beschreibt **jede C#-Klasse und ihre Methoden** – wie sie funktionieren und
-wovon sie abhängen – sowie die übrigen Programmiersprachen im Projekt (JavaScript,
-PowerShell). Es dient als Nachschlagewerk, um den Code **vollständig zu verstehen und bei
-spezifischen Rückfragen erklären** zu können.
 
 > **Verwendete Werkzeuge / Kontext:** Für dieses Projekt wurden **Ollama mit einem
 > Qwen-Modell** sowie **Claude** eingesetzt. Das Projekt hat höhere Anforderungen, als ich
